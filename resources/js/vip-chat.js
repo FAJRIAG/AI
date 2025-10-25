@@ -1,0 +1,161 @@
+// resources/js/vip-chat.js
+if (!window.__VIP_CHAT_INIT__) {
+  window.__VIP_CHAT_INIT__ = true;
+
+  const vipRoot = document.querySelector('[data-page="vip-chat"]');
+  if (!vipRoot) { /* noop */ }
+  else {
+    const SESSION_ID = vipRoot.dataset.sessionId || '';
+    const chatList   = document.getElementById('chatList');
+    const promptEl   = document.getElementById('prompt');
+    const sendBtn    = document.getElementById('send');
+    const stopBtn    = document.getElementById('stop');
+    const typingEl   = document.getElementById('typing');
+    const scrollEl   = document.getElementById('scrollArea');
+    const toBottom   = document.getElementById('toBottom');
+    const csrfToken  = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const searchEl   = document.getElementById('chatSearch');
+
+    let controller = null;
+    let lastUserMsg = '';
+
+    const on=(el,ev,fn)=> el&&el.addEventListener(ev,fn);
+    const scrollBottom=()=> { if(scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; };
+    const md=(s)=> window.DOMPurify ? DOMPurify.sanitize(marked.parse(s||'')) : (s||'');
+    const escapeHtml=(s)=> (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    const autoResize=(el)=> { if(!el) return; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,200)+'px'; };
+
+    function enhanceCode(scope){
+      scope.querySelectorAll('pre code').forEach(b => { try{ window.hljs && hljs.highlightElement(b); }catch(e){} });
+      scope.querySelectorAll('pre').forEach(pre => {
+        pre.style.position='relative';
+        if (pre.querySelector('.copy-btn')) return;
+        const btn=document.createElement('button'); btn.className='copy-btn'; btn.type='button'; btn.textContent='Copy';
+        btn.addEventListener('click',()=>{ const code=pre.querySelector('code')?.innerText||''; navigator.clipboard.writeText(code).then(()=>{ btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy',900); });});
+        pre.appendChild(btn);
+      });
+    }
+
+    function renderUser(text){
+      const row=document.createElement('div'); row.className='fade-in flex';
+      row.innerHTML=`<div class="ml-auto max-w-[80%] rounded-2xl bg-[#1a1f2a] px-4 py-2 ring-1 ring-white/10">
+        <div class="whitespace-pre-wrap leading-6 text-gray-100">${escapeHtml(text)}</div></div>`;
+      chatList.appendChild(row); scrollBottom();
+    }
+    function renderAI(content, replace=false){
+      if(replace && chatList.lastChild && chatList.lastChild.classList?.contains('streaming')){
+        const art=chatList.lastChild.querySelector('article'); art.innerHTML=md(content); enhanceCode(chatList.lastChild); scrollBottom(); return;
+      }
+      const row=document.createElement('div'); row.className='fade-in flex gap-3 streaming';
+      row.innerHTML=`<div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">AI</div>
+                     <article class="prose prose-invert max-w-none">${md(content)}</article>`;
+      chatList.appendChild(row); enhanceCode(row); scrollBottom();
+    }
+
+    // Scroll UI + input
+    on(scrollEl,'scroll',()=>{ const nearBottom=(scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight)<80; toBottom?.classList.toggle('hidden', nearBottom); });
+    on(toBottom,'click',scrollBottom);
+    on(promptEl,'input',()=>autoResize(promptEl));
+
+    // Filter list
+    on(searchEl,'input',e=>{
+      const q=(e.target.value||'').toLowerCase();
+      document.querySelectorAll('#sessionList > div').forEach(item=>{
+        const txt=item.querySelector('a')?.textContent?.toLowerCase() || '';
+        item.style.display = txt.includes(q) ? '' : 'none';
+      });
+    });
+
+    // Bind tombol rename (opsional)
+    document.querySelectorAll('[data-rename]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url   = btn.getAttribute('data-url');
+        const title = btn.getAttribute('data-title') || '';
+        const modal = document.getElementById('renameModal');
+        const form  = document.getElementById('renameForm');
+        const input = document.getElementById('renameInput');
+        if (!modal || !form || !input) return;
+
+        form.action = url;
+        let m = form.querySelector('input[name="_method"]');
+        if (!m) {
+          m = document.createElement('input');
+          m.type = 'hidden';
+          m.name = '_method';
+          form.appendChild(m);
+        }
+        m.value = 'PATCH';
+
+        input.value = title;
+        modal.classList.remove('hidden');
+        setTimeout(()=>input.focus(), 50);
+      });
+    });
+
+    async function sendMessage(contentOverride=null){
+      const content=(contentOverride ?? promptEl.value).trim();
+      if(!content || controller) return;
+
+      if(!SESSION_ID){
+        renderAI('(Pilih / buat chat di sidebar dulu.)');
+        return;
+      }
+
+      lastUserMsg=content; promptEl.value=''; autoResize(promptEl); renderUser(content);
+
+      controller=new AbortController();
+      sendBtn?.classList.add('opacity-60','pointer-events-none');
+      stopBtn?.classList.remove('hidden');
+      typingEl?.classList.remove('hidden');
+
+      let ai='';
+      try{
+        const resp=await fetch(`${window.location.origin}/sessions/${encodeURIComponent(SESSION_ID)}/stream`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},
+          body:JSON.stringify({content}),
+          signal:controller.signal
+        });
+
+        // Debug yang jelas kalau non-OK
+        if (!resp.ok || !resp.body) {
+          const text = await resp.text().catch(()=> '');
+          throw new Error(`Bad response: ${resp.status} ${text?.slice(0,200) || ''}`);
+        }
+
+        const reader=resp.body.getReader(); const decoder=new TextDecoder();
+        while(true){
+          const {value,done}=await reader.read(); if(done) break;
+          const chunk=decoder.decode(value,{stream:true});
+          for(const block of chunk.split('\n\n')){
+            const lines=block.split('\n'); if(lines.length<2) continue;
+            const evt=lines[0].replace('event:','').trim(); const data=lines[1].replace('data:','').trim();
+            try{
+              const obj=JSON.parse(data);
+              if(evt==='token'){ ai+=obj.token; renderAI(ai,true); }
+              if(evt==='error'){ renderAI('(Gagal menghubungi model. Periksa API key atau jaringan.)'); }
+            }catch(e){}
+          }
+        }
+      }catch(e){
+        if(e.name!=='AbortError'){ renderAI('(Gagal menghubungi model. Periksa API key atau jaringan.)'); console.error(e); }
+      }finally{
+        typingEl?.classList.add('hidden');
+        sendBtn?.classList.remove('opacity-60','pointer-events-none');
+        stopBtn?.classList.add('hidden');
+        if(chatList.lastChild) chatList.lastChild.classList.remove('streaming');
+        controller=null;
+      }
+    }
+
+    on(sendBtn,'click',()=>sendMessage());
+    on(stopBtn,'click',()=>{ if(controller){ controller.abort(); } });
+    on(promptEl,'keydown',e=>{
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+      if((e.metaKey||e.ctrlKey) && e.key==='Enter'){ e.preventDefault(); sendMessage(); }
+    });
+
+    try{ enhanceCode(document); }catch(e){}
+    try{ promptEl?.focus(); }catch(e){}
+  }
+}

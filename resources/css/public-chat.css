@@ -1,0 +1,154 @@
+:root { --ring:#2563eb; --bg:#0b0f15; }
+html, body { background: var(--bg); }
+
+/* ---------- Animations & helpers ---------- */
+.fade-in { animation: fade-in .25s ease-out both; }
+@keyframes fade-in { from { opacity:0; transform: translateY(4px) } to { opacity:1; transform:none } }
+
+::-webkit-scrollbar{ width:10px; height:10px }
+::-webkit-scrollbar-thumb{ background:#2a3240; border-radius:999px }
+
+.typing{ display:inline-flex; gap:4px; align-items:center }
+.typing span{ width:6px; height:6px; border-radius:50%; background:#aab3bf; opacity:.75; animation:bl 1s infinite }
+.typing span:nth-child(2){ animation-delay:.15s } .typing span:nth-child(3){ animation-delay:.3s }
+@keyframes bl{ 0%,80%,100%{ transform:translateY(0) } 40%{ transform:translateY(-4px) } }
+
+.copy-btn{
+  position:absolute; top:.5rem; right:.5rem; font-size:.75rem; padding:.25rem .5rem;
+  border-radius:.375rem; background:#0f172a; color:#e6edf3; border:1px solid rgba(255,255,255,.06);
+  opacity:0; transition:.2s;
+}
+pre:hover .copy-btn{ opacity:1 }
+
+.prose pre { overflow:auto; }
+.prose code { white-space:pre-wrap; word-break:break-word; }
+
+button[disabled], .is-disabled { opacity:.6; pointer-events:none; }
+
+/* =================================================================
+   SIDEBAR STATES & LAYOUT
+   ================================================================= */
+.sidebar { min-height:0; } /* agar child boleh scroll */
+
+@media (min-width:768px){
+  /* Collapse desktop: sembunyikan sidebar dan ubah grid jadi 1 kolom */
+  .layout.sidebar-hidden { grid-template-columns: 1fr !important; }
+  .layout.sidebar-hidden > .sidebar {
+    display:none !important; visibility:hidden !important; width:0 !important; max-width:0 !important;
+    pointer-events:none !important;
+  }
+}
+
+@media (max-width:767.98px){
+  /* Drawer mobile */
+  .layout.mobile-open .sidebar{
+    display:flex !important; flex-direction:column; overflow:hidden;
+    position:fixed; inset:0 auto 0 0; width:280px; z-index:50;
+    background:#0c1117; border-right:1px solid rgba(255,255,255,.1);
+    transform:translateX(0); transition:transform .2s ease;
+  }
+}
+
+/* =================================================================
+   THEME SWITCH (html[data-theme="light"|"dark"])
+   Default = dark; Light override di bawah
+   ================================================================= */
+html[data-theme="light"] body{ background:#f7fafc; color:#0f172a; }
+
+/* Topbar & Sidebar di Light */
+html[data-theme="light"] .sidebar,
+html[data-theme="light"] header.h-12,
+html[data-theme="light"] header[role="banner"]{
+  background:#ffffff !important;
+  border-color:rgba(15,23,42,.08) !important;
+  color:#0f172a;
+}
+
+/* Elemen gelap → terang (Light) */
+html[data-theme="light"] .bg-\[\#0c1117\],
+html[data-theme="light"] .bg-\[\#1a1f2a\],
+html[data-theme="light"] .bg-\[\#1f2937\],
+html[data-theme="light"] .bg-white\/\[\.03\],
+html[data-theme="light"] .bg-white\/10,
+html[data-theme="light"] .bg-white\/5 { background-color:#ffffff !important; }
+
+/* Border & ring halus (Light) */
+html[data-theme="light"] .border-white\/10,
+html[data-theme="light"] .ring-white\/10{
+  --tw-border-opacity:1; border-color:rgba(15,23,42,.08) !important;
+  --tw-ring-color:rgba(15,23,42,.08) !important;
+}
+
+/* Bubble user jadi abu terang (Light) */
+html[data-theme="light"] #chatList .ml-auto.max-w-\[80\%\]{
+  background:#f3f4f6 !important; color:#0f172a !important;
+}
+
+/* Prose (AI) warna teks (Light) */
+html[data-theme="light"] #chatList article.prose.prose-invert{ color:#0f172a; }
+html[data-theme="light"] #chatList article.prose.prose-invert :where(h1,h2,h3,h4,h5,h6){ color:#0f172a; }
+html[data-theme="light"] #chatList article.prose.prose-invert code{ color:#1f2937; }
+
+/* Input & hover subtle (Light) */
+html[data-theme="light"] input#chatSearch{
+  background:#ffffff !important; border-color:rgba(15,23,42,.12) !important; color:#0f172a !important;
+}
+html[data-theme="light"] .hover\:bg-white\/10:hover,
+html[data-theme="light"] .hover\:bg-white\/20:hover{ background:rgba(15,23,42,.06) !important; }
+
+/* Code block tetap kontras di Light */
+html[data-theme="light"] .prose pre{ background:#0b1020; color:#e6edf3; }
+
+/* Scrollbar di Light */
+html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(15,23,42,.25); }
+
+/* =================================================================
+   COMPONENT TWEAKS
+   ================================================================= */
+
+/* Theme button: kontras di kedua mode */
+html[data-theme="dark"]  #themeToggle{
+  background:rgba(255,255,255,.05) !important; color:#e5e7eb !important; border-color:rgba(255,255,255,.10) !important;
+}
+html[data-theme="dark"]  #themeToggle:hover{ background:rgba(255,255,255,.08) !important; }
+
+html[data-theme="light"] #themeToggle{
+  background:#f3f4f6 !important; color:#0f172a !important; border-color:rgba(15,23,42,.20) !important;
+}
+html[data-theme="light"] #themeToggle:hover{ background:#e5e7eb !important; }
+
+/* List style di Light */
+html[data-theme="light"] .sidebar .text-gray-200{ color:#0f172a !important; }
+html[data-theme="light"] .sidebar .text-gray-400{ color:#334155 !important; }
+html[data-theme="light"] .sidebar .bg-white\/\[\.03\]{ background:#ffffff !important; }
+html[data-theme="light"] .sidebar .hover\:bg-white\/\[\.06\]:hover{ background:#f8fafc !important; }
+html[data-theme="light"] .sidebar .bg-white\/10{ background:#eef2ff !important; } /* active */
+
+/* =================================================================
+   NEW CHAT BUTTON — BLACK (final, tanpa konflik)
+   ================================================================= */
+#newChatBtn{
+  background:#000 !important; color:#fff !important; border-color:#000 !important;
+  box-shadow: 0 1px 0 rgba(15,23,42,.06), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+#newChatBtn:hover{
+  background:#111 !important; border-color:#111 !important;
+}
+#newChatBtn:focus-visible{
+  outline:2px solid rgba(37,99,235,.7) !important; outline-offset:2px !important;
+}
+#newChatBtn svg{ stroke:#fff !important; }
+/* === FINAL OVERRIDE: New chat harus hitam (mengalahkan aturan lain) === */
+.sidebar #newChatBtn,
+.sidebar #newChatBtn:hover,
+.sidebar #newChatBtn:focus,
+.sidebar #newChatBtn:active {
+  background-color: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+.sidebar #newChatBtn svg { stroke: #fff !important; }
+.sidebar #newChatBtn:focus-visible {
+  outline: 2px solid rgba(37,99,235,.7) !important;
+  outline-offset: 2px !important;
+}
