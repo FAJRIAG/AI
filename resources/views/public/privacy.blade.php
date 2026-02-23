@@ -154,12 +154,12 @@
                 </section>
 
                 <section id="komputasi-eksternal" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
-                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">3. Kredibilitas Transmisi ke Pihak
-                        Ketiga</h2>
+                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">3. Kredibilitas Komputasi Model AI
+                    </h2>
                     <p>
-                        Layanan JriGPT dibangun menggunakan integrasi API dengan model LLM dari pihak ketiga secara awan
-                        (*cloud computation*). Perintah kueri yang Anda ajukan
-                        dapat diproses pada server eksternal ini untuk memberikan balasan *generative* yang tepat.
+                        Layanan JriGPT dibangun menggunakan arsitektur model LLM tingkat lanjut berskalasi awan
+                        (*cloud computation*). Perintah kueri yang Anda ajukan akan diproses secara tertutup
+                        pada ruang komputasi ini untuk memberikan balasan *generative* yang tepat.
                     </p>
                     <div class="bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl p-6 my-6">
                         <h4 class="text-blue-400 font-semibold mb-2 flex items-center gap-2">
@@ -171,10 +171,10 @@
                             Persetujuan Model Bebas Pelatihan (*Zero Data Retention*)
                         </h4>
                         <p class="text-sm text-gray-300 m-0">
-                            Kami memastikan bahwa penyedia API pihak ketiga yang kami gunakan diwajibkan oleh perjanjian
-                            untuk <strong>tidak menggunakan rekaman percakapan Anda maupun data internal sistem
-                                lainnya</strong>
-                            sebagai basis data pelatihan (*training datasets*) pemodelan AI mereka yang bersifat publik.
+                            Kami secara ketat memastikan bahwa infrastruktur model LLM yang beroperasi menangani pesanan
+                            Anda <strong>tidak diizinkan maupun dirancang untuk menyerap rekaman percakapan
+                                Anda</strong>
+                            sebagai basis data pelatihan (*training datasets*) untuk perbaikan algoritma publik.
                         </p>
                     </div>
                 </section>
