@@ -18,8 +18,9 @@
           @if($role === 'assistant')
             <div class="fade-in flex gap-3">
               <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">JG</div>
-              {{-- biarkan raw; frontend akan render markdown untuk stream berikutnya --}}
-              <article class="prose prose-invert max-w-none">{!! \Illuminate\Support\Str::of($content) !!}</article>
+              {{-- raw content parsed by frontend on load --}}
+              <div class="ai-raw-content hidden">{{ $content }}</div>
+              <article class="ai-prose prose prose-sm prose-invert max-w-none flex-1 min-w-0"></article>
             </div>
           @else
             <div class="fade-in flex">

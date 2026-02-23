@@ -51,10 +51,18 @@ if (!window.__VIP_CHAT_INIT__) {
         <div class="lp-backdrop"></div>
         <div class="lp-panel">
           <div class="lp-header">
-            <span class="lp-title">🖥 Live Preview — <span class="lp-lang">${lang}</span></span>
+            <span class="lp-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+              Live Preview
+              <span class="lp-lang">${lang}</span>
+            </span>
             <div class="lp-actions">
-              <button class="lp-btn lp-refresh" title="Refresh">↺</button>
-              <button class="lp-btn lp-close" title="Tutup">✕</button>
+              <button class="lp-btn lp-refresh" title="Refresh">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              </button>
+              <button class="lp-btn lp-close" title="Tutup">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
             </div>
           </div>
           <iframe class="lp-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
@@ -66,9 +74,15 @@ if (!window.__VIP_CHAT_INIT__) {
       const load = () => { iframe.contentDocument.open(); iframe.contentDocument.write(html); iframe.contentDocument.close(); };
       load();
 
-      modal.querySelector('.lp-close').addEventListener('click', () => modal.remove());
+      const closeModal = () => {
+        modal.classList.remove('lp-open');
+        modal.style.pointerEvents = 'none';
+        setTimeout(() => modal.remove(), 400); // 400ms corresponds to transition time in css
+      };
+
+      modal.querySelector('.lp-close').addEventListener('click', closeModal);
       modal.querySelector('.lp-refresh').addEventListener('click', load);
-      modal.querySelector('.lp-backdrop').addEventListener('click', () => modal.remove());
+      modal.querySelector('.lp-backdrop').addEventListener('click', closeModal);
       requestAnimationFrame(() => modal.classList.add('lp-open'));
     }
 
@@ -238,7 +252,14 @@ if (!window.__VIP_CHAT_INIT__) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); sendMessage(); }
     });
 
-    try { enhanceCode(document); } catch (e) { }
+    // Init
+    try {
+      document.querySelectorAll('.ai-raw-content').forEach(el => {
+        const article = el.nextElementSibling;
+        if (article) article.innerHTML = md(el.textContent);
+      });
+      enhanceCode(document);
+    } catch (e) { }
     try { promptEl?.focus(); } catch (e) { }
   }
 }

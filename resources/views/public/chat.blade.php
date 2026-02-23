@@ -8,7 +8,8 @@
         @if(($m['role'] ?? '') === 'assistant')
           <div class="fade-in flex gap-3">
             <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">JG</div>
-            <article class="prose prose-invert max-w-none">{!! \Illuminate\Support\Str::of($m['content']) !!}</article>
+            <div class="ai-raw-content hidden">{{ $m['content'] ?? '' }}</div>
+            <article class="ai-prose prose prose-invert max-w-none flex-1 min-w-0"></article>
           </div>
         @else
           <div class="fade-in flex">
@@ -47,7 +48,7 @@
     <div class="max-w-3xl mx-auto px-4 py-4">
       <div class="flex items-end gap-2">
         <textarea id="prompt" rows="1" placeholder="Tulis pesan…" class="flex-1 resize-none rounded-2xl bg-[#0c1117] border border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-600/60
-                   px-4 py-3 leading-6 text-gray-100 placeholder:text-gray-500"></textarea>
+                     px-4 py-3 leading-6 text-gray-100 placeholder:text-gray-500"></textarea>
         <button id="send"
           class="shrink-0 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 font-semibold transition">Kirim</button>
         <button id="stop" class="shrink-0 hidden rounded-2xl bg-white/10 px-4 py-3">Stop</button>
