@@ -1,6 +1,5 @@
 // resources/js/vip-chat.js
 import { marked } from 'marked';
-import markedKatex from 'marked-katex-extension';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 
@@ -10,10 +9,19 @@ marked.setOptions({
   gfm: true,          // GitHub Flavored Markdown (tables, code fences)
 });
 
-marked.use(markedKatex({
-  throwOnError: false,
-  output: 'html'
-}));
+function renderMath(el) {
+  if (window.renderMathInElement) {
+    window.renderMathInElement(el, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true }
+      ],
+      throwOnError: false
+    });
+  }
+}
 
 if (!window.__VIP_CHAT_INIT__) {
   window.__VIP_CHAT_INIT__ = true;
@@ -205,12 +213,20 @@ if (!window.__VIP_CHAT_INIT__) {
     }
     function renderAI(content, replace = false) {
       if (replace && chatList.lastChild && chatList.lastChild.classList?.contains('streaming')) {
-        const art = chatList.lastChild.querySelector('article'); art.innerHTML = md(content); enhanceCode(chatList.lastChild); scrollBottom(); return;
+        const art = chatList.lastChild.querySelector('article');
+        art.innerHTML = md(content);
+        renderMath(art);
+        enhanceCode(chatList.lastChild);
+        scrollBottom();
+        return;
       }
       const row = document.createElement('div'); row.className = 'fade-in flex gap-3 streaming';
-      row.innerHTML = `<div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs font-semibold">AI</div>
+      row.innerHTML = `<div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs font-semibold">JG</div>
                      <article class="ai-prose prose prose-sm prose-invert max-w-none flex-1 min-w-0">${md(content)}</article>`;
-      chatList.appendChild(row); enhanceCode(row); scrollBottom();
+      chatList.appendChild(row);
+      renderMath(row.querySelector('article'));
+      enhanceCode(row);
+      scrollBottom();
     }
 
     // Scroll UI + input
@@ -330,7 +346,10 @@ if (!window.__VIP_CHAT_INIT__) {
     try {
       document.querySelectorAll('.ai-raw-content').forEach(el => {
         const article = el.nextElementSibling;
-        if (article) article.innerHTML = md(el.textContent);
+        if (article) {
+          article.innerHTML = md(el.textContent);
+          renderMath(article);
+        }
       });
       enhanceCode(document);
     } catch (e) { }

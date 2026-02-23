@@ -10,6 +10,10 @@
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
     integrity="sha384-zh0CIsljE7vayia65P8Huv8Lq47h94K6vE/MToU4Q1/xscYAAu+rS7zWuP345E6A" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"
+    integrity="sha384-Rma6DA2S8Uwh7pUIE7B9U/8HZ/+da9WlS8zYW4V4v3D8E1n/B0G3D2O7L2W6pT" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"
+    integrity="sha384-h7lkLVDM7wOMuc5qR7n37VNKuLXx27Y5BACTYdgK/tdr9H8sqHaw7Wn9zGzVzU" crossorigin="anonymous"></script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   @vite([
     'resources/css/app.css',
