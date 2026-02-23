@@ -8,11 +8,6 @@ marked.setOptions({
   gfm: true,
 });
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
-
 marked.use(markedKatex({
   throwOnError: false,
   displayMode: false, // will be handled by delimiters
@@ -27,7 +22,6 @@ function renderMath(el) {
         { left: '$$', right: '$$', display: true },
         { left: '$', right: '$', display: false },
         { left: '\\(', right: '\\)', display: false },
-        { left: '\\+', right: '\\+', display: false },
         { left: '\\[', right: '\\]', display: true }
       ],
       throwOnError: false
