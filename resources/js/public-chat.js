@@ -14,19 +14,8 @@ marked.use(markedKatex({
 }));
 
 function renderMath(el) {
-  // We keep this as fallback for auto-render if needed, 
-  // but marked-katex-extension should handle most.
-  if (window.renderMathInElement) {
-    window.renderMathInElement(el, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false },
-        { left: '\\[', right: '\\]', display: true }
-      ],
-      throwOnError: false
-    });
-  }
+  // Relying on marked-katex-extension for math rendering.
+  // This function is kept empty to prevent calls from breaking.
 }
 
 const pageRoot = document.querySelector('[data-page="public-chat"]');
@@ -68,11 +57,10 @@ else {
   function preprocessMath(text) {
     if (!text) return '';
     // Normalize delimiters to $ and $$ before marked parses it
-    // This prevents marked from seeing _ or * inside math as markdown tags
-    text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
+    text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq.trim()}$$`);
     text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq.trim()}$`);
     // Aggressive fix for models sending [ ... ] or ( ... ) containing math
-    text = text.replace(/(?:\n|^)\[([\s\S]*?\\(?:mathbb|int|sum|frac|begin|alpha|beta|gamma|delta|le|ge|to|forall|equiv|boxed|quad|qquad)[\s\S]*?)\](?:\n|$)/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
+    text = text.replace(/(?:\n|^)\[([\s\S]*?\\(?:mathbb|int|sum|frac|begin|alpha|beta|gamma|delta|le|ge|to|forall|equiv|boxed|quad|qquad)[\s\S]*?)\](?:\n|$)/g, (_, eq) => `$$${eq.trim()}$$`);
     return text;
   }
 
@@ -84,10 +72,11 @@ else {
       ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac', 'annotation-xml'],
       ADD_ATTR: ['encoding', 'display', 'variant'],
       ADD_CLASSES: {
-        '*': ['katex', 'katex-display', 'katex-html', 'base', 'strut', 'mord', 'mbin', 'mrel', 'mopen', 'mclose', 'mpunct', 'msupsub', 'vlist-t', 'vlist-r', 'vlist', 'vlist-s', 'mathnormal', 'mtight', 'mop', 'mspace', 'delimsizing', 'mfrac', 'small-op', 'op-symbol', 'root', 'sqrt', 'accent']
+        '*': ['katex', 'katex-display', 'katex-html', 'base', 'strut', 'mord', 'mbin', 'mrel', 'mopen', 'mclose', 'mpunct', 'msupsub', 'vlist-t', 'vlist-r', 'vlist', 'vlist-s', 'mathnormal', 'mtight', 'mop', 'mspace', 'delimsizing', 'mfrac', 'small-op', 'op-symbol', 'root', 'sqrt', 'accent', 'vlist-well', 'pstrut', 'vlist-well-n', 'vlist-well-m', 'vlist-well-s']
       },
       FORBID_TAGS: ['style', 'script'],
-      KEEP_CONTENT: true
+      KEEP_CONTENT: true,
+      FROM_TRUSTED_TYPE: true
     });
   };
   const escapeHtml = (s) => s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
