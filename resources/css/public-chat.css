@@ -45,21 +45,28 @@ body {
 /* KaTeX custom styling */
 .katex-display {
   margin: 1.5rem 0 !important;
-  padding: 1.25rem;
+  padding: 1.5rem;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
   border-radius: 16px;
   overflow-x: auto;
   overflow-y: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }
 
 .katex {
-  font-size: 1.15em;
-  /* Slightly larger for better readability */
+  font-family: 'KaTeX_Main', 'Computer Modern Serif', serif !important;
+  font-size: 1.2em !important;
+  /* Premium size for doctorate level math */
   line-height: 1.4;
-  color: #f3f4f6;
-  /* Higher contrast gray-100 */
+  color: #ffffff !important;
+  /* Max contrast */
+}
+
+.katex .mathnormal {
+  font-family: 'KaTeX_Math', 'Computer Modern Serif', serif !important;
+  font-style: italic;
 }
 
 .katex-html {
