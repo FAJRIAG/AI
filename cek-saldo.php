@@ -20,14 +20,14 @@ $keys = [
 $model = 'openai/gpt-oss-120b';
 $url = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/') . '/chat/completions';
 
-echo "Cek Sisa Token Harian (TPD) Model: $model\n";
-echo str_repeat("=", 70) . "\n";
-echo sprintf("%-15s | %-15s | %-20s\n", "API Key", "Status", "Sisa Token (Hari Ini)");
-echo str_repeat("-", 70) . "\n";
+echo "Cek Limit Groq Model: $model\n";
+echo str_repeat("=", 85) . "\n";
+echo sprintf("%-10s | %-12s | %-25s | %-25s\n", "API Key", "Status", "Sisa Token per Menit", "Sisa Request per Hari");
+echo str_repeat("-", 85) . "\n";
 
 foreach ($keys as $idx => $key) {
     if (empty($key)) {
-        echo sprintf("Key %-11d | %-15s | %-20s\n", $idx + 1, "KOSONG", "-");
+        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "KOSONG", "-", "-");
         continue;
     }
 
@@ -39,27 +39,29 @@ foreach ($keys as $idx => $key) {
         'Content-Type' => 'application/json',
     ])->post($url, [
                 'model' => $model,
-                'messages' => [['role' => 'user', 'content' => 'tes']],
+                'messages' => [['role' => 'user', 'content' => 'limit check']],
                 'max_tokens' => 1,
             ]);
 
     $headers = $resp->headers();
 
-    // Fallback detection logic based on groq specific headers
-    $remainingTokensDay = 'Unknown';
-    if (isset($headers['x-ratelimit-remaining-tokens'][0])) {
-        $remainingTokensDay = $headers['x-ratelimit-remaining-tokens'][0];
-    }
+    // Groq track "limit-tokens" as TPM (Tokens Per Minute = 8000)
+    $remainingTPM = $headers['x-ratelimit-remaining-tokens'][0] ?? 'Unknown';
+    $limitTPM = $headers['x-ratelimit-limit-tokens'][0] ?? '8000';
 
-    // Check if ratelimit header exists 
+    // Groq track "limit-requests" as RPD (Requests Per Day = 1000)
+    $remainingRPD = $headers['x-ratelimit-remaining-requests'][0] ?? 'Unknown';
+    $limitRPD = $headers['x-ratelimit-limit-requests'][0] ?? '1000';
+
     if ($resp->successful()) {
-        $formatted = is_numeric($remainingTokensDay) ? number_format((float) $remainingTokensDay, 0, ',', '.') : $remainingTokensDay;
-        echo sprintf("Key %-11d | %-15s | %-20s\n", $idx + 1, "OK [200]", $formatted);
+        $strTPM = is_numeric($remainingTPM) ? number_format((float) $remainingTPM, 0, ',', '.') . " / " . number_format((float) $limitTPM, 0, ',', '.') : $remainingTPM;
+        $strRPD = is_numeric($remainingRPD) ? number_format((float) $remainingRPD, 0, ',', '.') . " / " . number_format((float) $limitRPD, 0, ',', '.') : $remainingRPD;
+
+        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "OK [200]", $strTPM, $strRPD);
     } elseif ($resp->status() === 429) {
-        $formatted = is_numeric($remainingTokensDay) ? number_format((float) $remainingTokensDay, 0, ',', '.') : '0 (Habis)';
-        echo sprintf("Key %-11d | %-15s | %-20s\n", $idx + 1, "LIMIT [429]", $formatted);
+        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "LIMIT [429]", "0 (Habis)", "0 (Habis)");
     } else {
-        echo sprintf("Key %-11d | %-15s | %-20s\n", $idx + 1, "ERROR [" . $resp->status() . "]", "-");
+        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "ERR [" . $resp->status() . "]", "-", "-");
     }
 }
-echo str_repeat("=", 70) . "\n";
+echo str_repeat("=", 85) . "\n";
