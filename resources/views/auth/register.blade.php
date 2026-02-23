@@ -92,7 +92,7 @@
         <h3 class="text-lg font-medium text-zinc-100 mb-2">Pro</h3>
         <div class="flex items-baseline gap-1">
           <span class="text-xs font-medium text-zinc-400 align-top mt-1">Rp</span>
-          <span class="text-3xl font-bold text-white">99.000</span>
+          <span class="text-3xl font-bold text-white">399.000</span>
           <span class="text-sm font-normal text-zinc-500">/ bulan</span>
         </div>
         <p class="text-sm text-zinc-400 mt-3 h-10">Kecepatan tinggi untuk profesional individual.</p>
