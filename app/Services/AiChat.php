@@ -45,7 +45,10 @@ class AiChat
         $payload = [
             'model' => $model,
             'messages' => $messages,
-            'temperature' => (float) config('ai.temperature', 0.2),
+            'temperature' => (float) config('ai.temperature', 0.4),
+            'top_p' => 0.5,
+            'frequency_penalty' => 0.05,
+            'presence_penalty' => 0.0,
             'stream' => true,
         ];
 
@@ -77,13 +80,14 @@ class AiChat
                 break;
             }
 
-            // Jika gagal (kemungkinan rate limit atau key mati), rotasi key dan coba lagi
-            Log::warning("AI request failed with status " . $resp->status() . " using key index " . ($attempt + 1) . ". Rotating key and retrying...");
+            Log::warning("AI request failed with status " . $resp->status() . " using key index " . ($attempt + 1) . ". Rotating key and retrying... Response: " . $resp->body());
             $keyManager->rotateKey();
             $attempt++;
 
             if ($attempt >= $maxRetries) {
-                $onToken("\n\n(⚠️ Gagal menghubungi model setelah beberapa kali percobaan: " . $resp->status() . ")");
+                if ($resp->status() === 429) {
+                    $onToken("\n\n(⚠️ 2jt token sudah habis)\n");
+                }
                 return;
             }
         }

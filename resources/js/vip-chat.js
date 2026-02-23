@@ -64,14 +64,38 @@ if (!window.__VIP_CHAT_INIT__) {
     function preprocessMath(text) {
       if (!text) return '';
       // Strip blockquote '>' if it's inside or immediately before math blocks
-      text = text.replace(/^\s*>\s*\$\$/gm, '$$');
-      text = text.replace(/\$\$>\s*/g, '$$');
+      text = text.replace(/^\s*>\s*\$\$/gm, () => '$$');
+      text = text.replace(/\$\$>\s*/g, () => '$$');
+
+      // Protect double backslashes inside math blocks so markdown doesn't collapse them
+      // KaTeX needs \\ for newlines in matrices/aligned environments
+      text = text.replace(/\\\\/g, '\\\\\\\\');
 
       // Convert \[ \] and \( \) to $$ and $ so marked-katex-extension can parse them
-      text = text.replace(/\\\[/g, '$$$$');
-      text = text.replace(/\\\]/g, '$$$$');
-      text = text.replace(/\\\(/g, '$$');
-      text = text.replace(/\\\)/g, '$$');
+      text = text.replace(/\\\[/g, () => '$$');
+      text = text.replace(/\\\]/g, () => '$$');
+      text = text.replace(/\\\(/g, () => '$');
+      text = text.replace(/\\\)/g, () => '$');
+
+      // Auto-wrap bare \begin{...} \end{...} in $$
+      const envs = ['pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix', 'matrix', 'align', 'aligned', 'eqnarray', 'cases'];
+      envs.forEach(env => {
+        text = text.replace(new RegExp(`\\\\begin\\{${env}\\}`, 'g'), () => `$$\\begin{${env}}`);
+        text = text.replace(new RegExp(`\\\\end\\{${env}\\}`, 'g'), () => `\\end{${env}}$$`);
+      });
+
+      // Clean up overlapping $$
+      text = text.replace(/\$\$\s*\$\$/g, () => '$$');
+
+      // Remove newlines inside $$ ... $$ so breaks:true doesn't insert <br> and ruin KaTeX parsing
+      text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, inner) => {
+        return '$$' + inner.replace(/\n/g, ' ') + '$$';
+      });
+
+      // Also for inline $ ... $ (no lookbehinds for older Safari support)
+      text = text.replace(/(^|[^\$])\$([^\$]+)\$(?!\$)/g, (match, before, inner) => {
+        return before + '$' + inner.replace(/\n/g, ' ') + '$';
+      });
 
       return text;
     }
