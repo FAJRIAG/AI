@@ -1,5 +1,6 @@
 // resources/js/vip-chat.js
 import { marked } from 'marked';
+import markedKatex from 'marked-katex-extension';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 
@@ -8,6 +9,11 @@ marked.setOptions({
   breaks: true,       // convert \n to <br>
   gfm: true,          // GitHub Flavored Markdown (tables, code fences)
 });
+
+marked.use(markedKatex({
+  throwOnError: false,
+  displayMode: false,
+}));
 
 function renderMath(el) {
   if (window.renderMathInElement) {
@@ -48,25 +54,24 @@ if (!window.__VIP_CHAT_INIT__) {
     const scrollBottom = () => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; };
     const autoResize = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 200) + 'px'; };
 
-    function normalizeLaTeX(text) {
+    function preprocessMath(text) {
       if (!text) return '';
-      // 1. Convert \[ ... \] to $$ ... $$ (with potential double backslashes)
-      text = text.replace(/\\+\[([\s\S]*?)\\+\]/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
-      // 2. Convert \( ... \) to $ ... $
-      text = text.replace(/\\+\(([\s\S]*?)\\+\)/g, (_, eq) => `$${eq.trim()}$`);
-      // 3. Fallback for [ ... ] or ( ... ) if they contain common LaTeX commands
+      text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
+      text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq.trim()}$`);
       text = text.replace(/(?:\n|^)\[([\s\S]*?\\(?:mathbb|int|sum|frac|begin|alpha|beta|gamma|delta|le|ge|to|forall|equiv|boxed|quad|qquad)[\s\S]*?)\](?:\n|$)/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
-      text = text.replace(/\(([^)]*?\\(?:mathbb|int|sum|frac|alpha|beta|gamma|delta|le|ge|to|forall|equiv)[\s\S]*?)\)/g, (_, eq) => `$${eq.trim()}$`);
       return text;
     }
 
     const md = (s) => {
-      const normalized = normalizeLaTeX(s);
-      const html = marked.parse(normalized || '');
+      const prepared = preprocessMath(s);
+      const html = marked.parse(prepared || '');
       return DOMPurify.sanitize(html, {
         USE_PROFILES: { html: true, mathml: true },
-        ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac'],
-        ADD_ATTR: ['encoding', 'display'],
+        ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac', 'annotation-xml'],
+        ADD_ATTR: ['encoding', 'display', 'variant'],
+        ADD_CLASSES: {
+          '*': ['katex', 'katex-display', 'katex-html', 'base', 'strut', 'mord', 'mbin', 'mrel', 'mopen', 'mclose', 'mpunct', 'msupsub', 'vlist-t', 'vlist-r', 'vlist', 'vlist-s', 'mathnormal', 'mtight', 'mop', 'mspace', 'delimsizing', 'mfrac', 'small-op', 'op-symbol', 'root', 'sqrt', 'accent']
+        },
         FORBID_TAGS: ['style', 'script'],
         KEEP_CONTENT: true
       });
