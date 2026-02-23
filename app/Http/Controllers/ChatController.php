@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ChatSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use App\Services\AiKeyManager;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChatController extends Controller
@@ -40,16 +41,18 @@ class ChatController extends Controller
         ]);
 
         // Konfigurasi AI
-        $apiKey = env('AI_API_KEY');
-        $apiBase = rtrim(env('AI_API_BASE', 'https://api.groq.com/openai/v1'), '/');
-        $model = env('AI_MODEL', 'openai/gpt-oss-120b');
-        $timeout = (int) env('AI_TIMEOUT', 120);
+        $keyManager = new AiKeyManager();
+        $apiKey = $keyManager->getCurrentKey();
+        $apiBase = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/');
+        $model = config('ai.model', 'openai/gpt-oss-120b');
+        $timeout = (int) config('ai.timeout', 120);
 
         if (!$apiKey) {
             return response()->json(['error' => 'AI API key missing'], 500);
         }
 
-        $resp = new StreamedResponse(function () use ($apiKey, $apiBase, $model, $timeout, $messages, $session) {
+        $resp = new StreamedResponse(function () use ($keyManager, $apiBase, $model, $timeout, $messages, $session) {
+            $apiKey = $keyManager->getCurrentKey();
             $up = Http::withToken($apiKey)->timeout($timeout)
                 ->withHeaders(['Accept' => 'application/json'])
                 ->withOptions(['buffer' => false])
@@ -58,6 +61,21 @@ class ChatController extends Controller
                     'messages' => $messages,
                     'stream' => true,
                 ]);
+
+            if ($up->status() === 429) {
+                // Rotate key and retry once
+                $newKey = $keyManager->rotateKey();
+                if ($newKey) {
+                    $up = Http::withToken($newKey)->timeout($timeout)
+                        ->withHeaders(['Accept' => 'application/json'])
+                        ->withOptions(['buffer' => false])
+                        ->post($apiBase . '/chat/completions', [
+                            'model' => $model,
+                            'messages' => $messages,
+                            'stream' => true,
+                        ]);
+                }
+            }
 
             if ($up->failed()) {
                 echo "event: error\n";

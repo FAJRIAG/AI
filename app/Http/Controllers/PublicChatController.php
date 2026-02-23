@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
+use App\Services\AiKeyManager;
 
 class PublicChatController extends Controller
 {
@@ -154,16 +155,18 @@ class PublicChatController extends Controller
         $messages = array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], $hist);
         array_unshift($messages, ['role' => 'system', 'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?". Jangan PERNAH menyebutkan bahwa kamu adalah LLaMA, GPT, atau model yang dikembangkan oleh Meta, OpenAI, Claude, maupun pihak lain.']);
 
-        $apiKey = env('AI_API_KEY');
-        $apiBase = rtrim(env('AI_API_BASE', 'https://api.groq.com/openai/v1'), '/');
-        $model = env('AI_MODEL', 'openai/gpt-oss-120b');
-        $timeout = (int) env('AI_TIMEOUT', 120);
+        $keyManager = new AiKeyManager();
+        $apiKey = $keyManager->getCurrentKey();
+        $apiBase = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/');
+        $model = config('ai.model', 'openai/gpt-oss-120b');
+        $timeout = (int) config('ai.timeout', 120);
 
         if (!$apiKey) {
             return response()->json(['error' => 'AI API key missing'], 500);
         }
 
-        $resp = new StreamedResponse(function () use ($apiKey, $apiBase, $model, $timeout, $messages, $sid, $r) {
+        $resp = new StreamedResponse(function () use ($keyManager, $apiBase, $model, $timeout, $messages, $sid, $r) {
+            $apiKey = $keyManager->getCurrentKey();
             $up = Http::withToken($apiKey)->timeout($timeout)
                 ->withHeaders(['Accept' => 'application/json'])
                 ->withOptions(['buffer' => false])
@@ -172,6 +175,21 @@ class PublicChatController extends Controller
                     'messages' => $messages,
                     'stream' => true,
                 ]);
+
+            if ($up->status() === 429) {
+                // Rotate key and retry once
+                $newKey = $keyManager->rotateKey();
+                if ($newKey) {
+                    $up = Http::withToken($newKey)->timeout($timeout)
+                        ->withHeaders(['Accept' => 'application/json'])
+                        ->withOptions(['buffer' => false])
+                        ->post($apiBase . '/chat/completions', [
+                            'model' => $model,
+                            'messages' => $messages,
+                            'stream' => true,
+                        ]);
+                }
+            }
 
             if ($up->failed()) {
                 echo "event: error\n";

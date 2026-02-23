@@ -19,7 +19,7 @@ class AiChat
      */
     public function stream(array $messages, \Closure $onToken): void
     {
-        $provider = strtolower(env('AI_PROVIDER', 'groq'));
+        $provider = strtolower(config('ai.provider', 'groq'));
         // Saat ini kamu pakai OpenAI — panggil Responses API:
         if ($provider === 'groq' || $provider === 'openai') {
             $this->streamOpenAIResponses($messages, $onToken);
@@ -37,19 +37,22 @@ class AiChat
      */
     private function streamOpenAIResponses(array $messages, \Closure $onToken): void
     {
-        $url = env('AI_API_BASE', 'https://api.groq.com/openai/v1') . '/chat/completions';
-        $model = env('AI_MODEL', 'openai/gpt-oss-120b');
+        $url = config('ai.api_base', 'https://api.groq.com/openai/v1') . '/chat/completions';
+        $model = config('ai.model', 'openai/gpt-oss-120b');
 
         // Payload memakai gaya "messages" (chat-like)
         $payload = [
             'model' => $model,
             'messages' => $messages,
-            'temperature' => (float) env('AI_TEMPERATURE', 0.2),
+            'temperature' => (float) config('ai.temperature', 0.2),
             'stream' => true,
         ];
 
+        $keyManager = new AiKeyManager();
+        $apiKey = $keyManager->getCurrentKey();
+
         $resp = Http::withHeaders([
-            'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
+            'Authorization' => 'Bearer ' . $apiKey,
             'Content-Type' => 'application/json',
         ])
             ->withOptions([
