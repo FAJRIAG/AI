@@ -4,7 +4,7 @@
 @section('sidebar')
   @include('vip.partials.sidebar', [
     'projects' => $projects ?? collect(),
-    'sessions' => $sessions ?? null, {{-- optional flat list --}}
+    'sessions' => $sessions ?? null, // optional flat list
   ])
 @endsection
 
@@ -17,7 +17,7 @@
           @php $role = $m->role ?? 'user'; $content = $m->content ?? ''; @endphp
           @if($role === 'assistant')
             <div class="fade-in flex gap-3">
-              <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">AI</div>
+              <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">JG</div>
               {{-- biarkan raw; frontend akan render markdown untuk stream berikutnya --}}
               <article class="prose prose-invert max-w-none">{!! \Illuminate\Support\Str::of($content) !!}</article>
             </div>
@@ -40,7 +40,7 @@
     {{-- Typing --}}
     <div id="typing" class="max-w-3xl mx-auto px-4 pb-4 hidden">
       <div class="flex gap-3">
-        <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">AI</div>
+        <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs">JG</div>
         <div class="rounded-2xl bg-white/5 px-3 py-2 text-gray-300 ring-1 ring-white/10">
           <span class="typing"><span></span><span></span><span></span></span>
         </div>

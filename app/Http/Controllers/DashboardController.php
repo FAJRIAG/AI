@@ -16,25 +16,43 @@ class DashboardController extends Controller
             ->latest()->get();
 
         $currentSession = null;
-        $sid = $r->query('session'); // bisa "0" atau string kosong, jadi cek eksplisit
+        $sid = $r->query('session');
+
         if ($sid !== null && $sid !== '') {
-            $currentSession = ChatSession::with('messages','project')->findOrFail($sid);
+            $currentSession = ChatSession::with('messages', 'project')->findOrFail($sid);
             abort_unless($currentSession->project->user_id === $r->user()->id, 403);
+        } else {
+            // Auto-select latest session or create a new one if none exists
+            $latestSession = ChatSession::whereHas('project', function ($query) use ($r) {
+                $query->where('user_id', $r->user()->id);
+            })->latest()->first();
+
+            if ($latestSession) {
+                return redirect()->route('vip.home', ['session' => $latestSession->id]);
+            } else {
+                // Auto create project and session
+                $project = Project::firstOrCreate(
+                    ['user_id' => $r->user()->id],
+                    ['name' => 'My Project']
+                );
+                $session = $project->sessions()->create(['title' => 'New Chat']);
+                return redirect()->route('vip.home', ['session' => $session->id]);
+            }
         }
 
         return view('vip.dashboard', [
-            'projects'       => $projects,
+            'projects' => $projects,
             'currentSession' => $currentSession,
-            'sessions'       => $this->mapSessionsFromProjects($projects), // biar sidebar punya flat list
-            'sid'            => $currentSession?->id,
+            'sessions' => $this->mapSessionsFromProjects($projects), // biar sidebar punya flat list
+            'sid' => $currentSession?->id,
         ]);
     }
 
     protected function mapSessionsFromProjects($projects)
     {
         return $projects->flatMap(function ($p) {
-            return $p->sessions->map(fn ($s) => [
-                'sid'   => $s->id, // gunakan kolom `sid` jika kamu punya
+            return $p->sessions->map(fn($s) => [
+                'sid' => $s->id, // gunakan kolom `sid` jika kamu punya
                 'title' => $s->title ?? 'Untitled',
             ]);
         })->values()->all();
@@ -48,7 +66,7 @@ class DashboardController extends Controller
         if (!$project) {
             $project = Project::create([
                 'user_id' => $r->user()->id,
-                'name'    => 'My Project',
+                'name' => 'My Project',
             ]);
         }
 

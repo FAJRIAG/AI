@@ -19,9 +19,9 @@ class AiChat
      */
     public function stream(array $messages, \Closure $onToken): void
     {
-        $provider = strtolower(env('AI_PROVIDER', 'openai'));
+        $provider = strtolower(env('AI_PROVIDER', 'groq'));
         // Saat ini kamu pakai OpenAI — panggil Responses API:
-        if ($provider === 'openai') {
+        if ($provider === 'groq' || $provider === 'openai') {
             $this->streamOpenAIResponses($messages, $onToken);
             return;
         }
@@ -32,28 +32,28 @@ class AiChat
 
     /**
      * OpenAI Responses API (SSE streaming).
-     * Endpoint: POST https://api.openai.com/v1/responses
+     * Endpoint: POST https://api.groq.com/openai/v1/chat/completions
      * Payload: { model, messages|input, stream: true }
      */
     private function streamOpenAIResponses(array $messages, \Closure $onToken): void
     {
-        $url   = 'https://api.openai.com/v1/responses';
-        $model = env('AI_MODEL', 'gpt-4o-mini');
+        $url = env('AI_API_BASE', 'https://api.groq.com/openai/v1') . '/chat/completions';
+        $model = env('AI_MODEL', 'llama-3.3-70b-versatile');
 
         // Payload memakai gaya "messages" (chat-like)
         $payload = [
-            'model'       => $model,
-            'messages'    => $messages,
+            'model' => $model,
+            'messages' => $messages,
             'temperature' => (float) env('AI_TEMPERATURE', 0.2),
-            'stream'      => true,
+            'stream' => true,
         ];
 
         $resp = Http::withHeaders([
-                'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
-                'Content-Type'  => 'application/json',
-            ])
+            'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
+            'Content-Type' => 'application/json',
+        ])
             ->withOptions([
-                'stream'  => true,
+                'stream' => true,
                 'timeout' => 0,     // jangan time out saat streaming
             ])
             ->post($url, $payload);
@@ -63,15 +63,20 @@ class AiChat
 
         while (!$body->eof()) {
             $chunk = $body->read(8192);
-            if ($chunk === '') { usleep(10_000); continue; }
+            if ($chunk === '') {
+                usleep(10_000);
+                continue;
+            }
 
             // Server mengirim beberapa baris; kita proses tiap baris
             foreach (preg_split("/\r\n|\n|\r/", $chunk) as $line) {
                 $line = trim($line);
-                if ($line === '' || str_starts_with($line, ':')) continue;
+                if ($line === '' || str_starts_with($line, ':'))
+                    continue;
 
                 // OpenAI Responses streaming mengirim "data: {json}" / "[DONE]"
-                if (!str_starts_with($line, 'data: ')) continue;
+                if (!str_starts_with($line, 'data: '))
+                    continue;
                 $json = substr($line, 6);
 
                 if ($json === '[DONE]') {
@@ -79,7 +84,8 @@ class AiChat
                 }
 
                 $obj = json_decode($json, true);
-                if (!is_array($obj)) continue;
+                if (!is_array($obj))
+                    continue;
 
                 // Event delta teks:
                 // type: "response.output_text.delta" -> field "delta"

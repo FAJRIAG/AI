@@ -1,9 +1,8 @@
 <header class="h-12 flex items-center justify-between px-4 border-b border-white/10 bg-[#0c1117]">
   {{-- Kiri: tombol toggle sidebar --}}
   <div class="flex items-center gap-2">
-    <button class="font-semibold px-2 py-1 rounded hover:bg-white/10"
-            data-toggle="sidebar" aria-label="Toggle sidebar">
-      AI Chat
+    <button class="font-semibold px-2 py-1 rounded hover:bg-white/10" data-toggle="sidebar" aria-label="Toggle sidebar">
+      JriGPT
     </button>
 
     {{-- (opsional) breadcrumb kecil / judul halaman --}}
@@ -21,43 +20,26 @@
     @yield('topbar-actions')
 
     {{-- Theme toggle (global) --}}
-{{--     <button id="themeToggle"
-            class="hidden sm:inline text-xs px-2 py-1 rounded border border-white/10 hover:bg-white/5">
+    {{-- <button id="themeToggle"
+      class="hidden sm:inline text-xs px-2 py-1 rounded border border-white/10 hover:bg-white/5">
       Theme
     </button> --}}
 
-    {{-- Quick "New" (untuk public chat) --}}
-    <form method="POST" action="{{ route('public.new') }}" class="hidden sm:block">
-      @csrf
-      <button class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 font-semibold">
-        New
-      </button>
-    </form>
+
 
     {{-- Auth status: VIP Area / Login / Logout --}}
     @auth
-      @if(auth()->user()->is_vip)
-        <a href="{{ route('vip.home') }}"
-           class="text-xs px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
-          VIP Area
-        </a>
-      @else
-        <span class="text-xs px-3 py-1.5 rounded bg-white/10">Logged in</span>
-      @endif
 
-      <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button class="text-xs px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
-          Logout
-        </button>
-      </form>
+
+      <a href="{{ route('logout') }}" class="text-xs px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
+        Logout
+      </a>
     @endauth
 
     @guest
-      <a href="{{ route('login') }}"
-         class="text-xs px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
+      <a href="{{ route('login') }}" class="text-xs px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
         VIP
       </a>
-    @endguest>
+    @endguest
   </div>
 </header>

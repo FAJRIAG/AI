@@ -7,8 +7,8 @@ use App\Http\Middleware\VipOnly; // <-- tambahkan ini
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'vip' => VipOnly::class,
         ]);
+
+        // Jika user sudah login tapi buka halaman guest (login/register), arahkan ke VIP
+        $middleware->redirectTo(
+            guests: '/login',
+            users: '/vip'
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

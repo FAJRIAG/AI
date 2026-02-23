@@ -29,20 +29,20 @@ class ChatController extends Controller
             ->sortBy('id')
             ->values();
 
-        $messages = $hist->map(fn ($m) => [
-            'role'    => $m->role,
+        $messages = $hist->map(fn($m) => [
+            'role' => $m->role,
             'content' => $m->content,
         ])->all();
 
         array_unshift($messages, [
-            'role'    => 'system',
+            'role' => 'system',
             'content' => 'You are a helpful Indonesian AI assistant.',
         ]);
 
         // Konfigurasi AI
-        $apiKey  = env('AI_API_KEY');
-        $apiBase = rtrim(env('AI_API_BASE', 'https://api.openai.com/v1'), '/');
-        $model   = env('AI_MODEL', 'gpt-4o-mini');
+        $apiKey = env('AI_API_KEY');
+        $apiBase = rtrim(env('AI_API_BASE', 'https://api.groq.com/openai/v1'), '/');
+        $model = env('AI_MODEL', 'llama-3.3-70b-versatile');
         $timeout = (int) env('AI_TIMEOUT', 120);
 
         if (!$apiKey) {
@@ -54,15 +54,17 @@ class ChatController extends Controller
                 ->withHeaders(['Accept' => 'application/json'])
                 ->withOptions(['buffer' => false])
                 ->post($apiBase . '/chat/completions', [
-                    'model'    => $model,
+                    'model' => $model,
                     'messages' => $messages,
-                    'stream'   => true,
+                    'stream' => true,
                 ]);
 
             if ($up->failed()) {
                 echo "event: error\n";
                 echo 'data: ' . json_encode(['error' => $up->body()]) . "\n\n";
-                @ob_flush(); @flush(); return;
+                @ob_flush();
+                @flush();
+                return;
             }
 
             $assistant = '';
@@ -70,11 +72,15 @@ class ChatController extends Controller
 
             while (!$body->eof()) {
                 $chunk = $body->read(8192);
-                if (!$chunk) { usleep(10000); continue; }
+                if (!$chunk) {
+                    usleep(10000);
+                    continue;
+                }
 
                 foreach (preg_split("/\r\n|\n|\r/", $chunk) as $line) {
                     $line = trim($line);
-                    if ($line === '' || !str_starts_with($line, 'data:')) continue;
+                    if ($line === '' || !str_starts_with($line, 'data:'))
+                        continue;
 
                     $payload = trim(substr($line, 5));
                     if ($payload === '[DONE]') {
@@ -83,16 +89,19 @@ class ChatController extends Controller
                         }
                         echo "event: done\n";
                         echo "data: {}\n\n";
-                        @ob_flush(); @flush(); return;
+                        @ob_flush();
+                        @flush();
+                        return;
                     }
 
-                    $json  = json_decode($payload, true);
+                    $json = json_decode($payload, true);
                     $delta = $json['choices'][0]['delta']['content'] ?? '';
                     if ($delta !== '') {
                         $assistant .= $delta;
                         echo "event: token\n";
                         echo 'data: ' . json_encode(['token' => $delta], JSON_UNESCAPED_UNICODE) . "\n\n";
-                        @ob_flush(); @flush();
+                        @ob_flush();
+                        @flush();
                     }
                 }
             }

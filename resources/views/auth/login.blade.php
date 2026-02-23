@@ -1,23 +1,25 @@
 <!doctype html>
 <html lang="id" class="h-full" data-theme="dark">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>VIP Login — AI Chat</title>
+  <title>Login - VIP JriGPT</title>
 
-  @vite(['resources/css/app.css','resources/js/app.js'])
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
   <link rel="stylesheet" href="{{ Vite::asset('resources/css/public-chat.css') }}">
 
-  <!-- (Opsional) Highlight untuk konsistensi gaya code -->
+  <!-- Highlight js for consistency -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 </head>
+
 <body class="min-h-screen bg-[var(--bg)] text-gray-100 antialiased">
   <!-- Top Bar -->
   <header role="banner" class="h-12 flex items-center justify-between px-4 border-b border-white/10 bg-[#0c1117]">
     <div class="flex items-center gap-2">
-      <a href="{{ url('/') }}" class="size-8 rounded bg-emerald-600 grid place-items-center font-bold">AI</a>
-      <a href="{{ url('/') }}" class="font-semibold tracking-tight hover:opacity-90">AI Chat</a>
+      <a href="{{ url('/') }}" class="size-8 rounded bg-emerald-600 grid place-items-center font-bold">JG</a>
+      <a href="{{ url('/') }}" class="font-semibold tracking-tight hover:opacity-90">JriGPT</a>
     </div>
     <div class="flex items-center gap-2">
       <button id="themeToggle" class="text-xs px-2 py-1 rounded border border-white/10 hover:bg-white/5">
@@ -43,8 +45,8 @@
           <div>
             <label for="email" class="block text-sm mb-1">Email</label>
             <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
-                   class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2.5 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                   placeholder="Masukkan email Anda">
+              class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2.5 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+              placeholder="Masukkan email Anda">
             @error('email')
               <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
             @enderror
@@ -54,8 +56,8 @@
           <div>
             <label for="password" class="block text-sm mb-1">Kata sandi</label>
             <input id="password" type="password" name="password" required
-                   class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2.5 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-                   placeholder="••••••••">
+              class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2.5 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+              placeholder="••••••••">
             @error('password')
               <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
             @enderror
@@ -77,7 +79,7 @@
 
           {{-- Submit --}}
           <button type="submit"
-                  class="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--ring)]">
+            class="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--ring)]">
             Masuk
           </button>
         </form>
@@ -94,16 +96,16 @@
           @if (Route::has('register'))
             <div class="flex items-center justify-between">
               <span class="text-gray-400">Belum punya akun?</span>
-              <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">
+              <a href="{{ route('register') }}"
+                class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10">
                 Daftar VIP
               </a>
             </div>
           @endif
 
-          <a href="{{ url('/') }}"
-             class="mt-1 inline-flex items-center gap-2 text-gray-300 hover:text-white">
+          <a href="{{ url('/') }}" class="mt-1 inline-flex items-center gap-2 text-gray-300 hover:text-white">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <path stroke="currentColor" stroke-width="2" d="M10 19l-7-7 7-7M3 12h18"/>
+              <path stroke="currentColor" stroke-width="2" d="M10 19l-7-7 7-7M3 12h18" />
             </svg>
             Kembali ke Halaman Chat
           </a>
@@ -112,7 +114,8 @@
 
       {{-- Compliance / Note --}}
       <p class="mt-4 text-center text-xs text-gray-500">
-        Dengan masuk, Anda menyetujui <a href="#" class="underline hover:text-gray-300">Ketentuan</a> dan <a href="#" class="underline hover:text-gray-300">Kebijakan Privasi</a>.
+        Dengan masuk, Anda menyetujui <a href="#" class="underline hover:text-gray-300">Ketentuan</a> dan <a href="#"
+          class="underline hover:text-gray-300">Kebijakan Privasi</a>.
       </p>
     </div>
   </main>
@@ -120,4 +123,5 @@
   <!-- Script: theme toggle & (no-sidebar) safe -->
   <script type="module" src="{{ Vite::asset('resources/js/sidebar-toggle.js') }}"></script>
 </body>
+
 </html>

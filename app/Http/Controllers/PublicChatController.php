@@ -25,8 +25,8 @@ class PublicChatController extends Controller
     private function createSession(): array
     {
         return [
-            'title'      => 'New Chat',
-            'history'    => [], // [['role'=>'user|assistant','content'=>'...']]
+            'title' => 'New Chat',
+            'history' => [], // [['role'=>'user|assistant','content'=>'...']]
             'created_at' => now()->toIso8601String(),
         ];
     }
@@ -52,7 +52,8 @@ class PublicChatController extends Controller
 
         // pakai current atau pertama
         $current = $r->session()->get('pub_current_sid');
-        if ($current && isset($sessions[$current])) return $current;
+        if ($current && isset($sessions[$current]))
+            return $current;
 
         $first = array_key_first($sessions);
         $r->session()->put('pub_current_sid', $first);
@@ -69,8 +70,8 @@ class PublicChatController extends Controller
 
         $list = collect($sessions)->map(function ($s, $k) {
             return [
-                'sid'        => $k,
-                'title'      => $s['title'] ?: 'Untitled',
+                'sid' => $k,
+                'title' => $s['title'] ?: 'Untitled',
                 'created_at' => $s['created_at'] ?? null,
             ];
         })->sortByDesc('created_at')->values()->all();
@@ -79,8 +80,8 @@ class PublicChatController extends Controller
 
         return view('public.chat', [
             'sessions' => $list,
-            'sid'      => $sid,
-            'history'  => $history,
+            'sid' => $sid,
+            'history' => $history,
         ]);
     }
 
@@ -122,7 +123,8 @@ class PublicChatController extends Controller
     public function delete(Request $r, string $sid)
     {
         $sessions = $this->getSessions($r);
-        if (isset($sessions[$sid])) unset($sessions[$sid]);
+        if (isset($sessions[$sid]))
+            unset($sessions[$sid]);
         $this->saveSessions($r, $sessions);
 
         $newSid = array_key_first($sessions) ?: null;
@@ -144,12 +146,12 @@ class PublicChatController extends Controller
 
         // siapkan messages (max 40)
         $hist = array_slice($sessions[$sid]['history'], -40);
-        $messages = array_map(fn ($m) => ['role' => $m['role'], 'content' => $m['content']], $hist);
+        $messages = array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], $hist);
         array_unshift($messages, ['role' => 'system', 'content' => 'You are a helpful Indonesian AI assistant.']);
 
-        $apiKey  = env('AI_API_KEY');
-        $apiBase = rtrim(env('AI_API_BASE', 'https://api.openai.com/v1'), '/');
-        $model   = env('AI_MODEL', 'gpt-4o-mini');
+        $apiKey = env('AI_API_KEY');
+        $apiBase = rtrim(env('AI_API_BASE', 'https://api.groq.com/openai/v1'), '/');
+        $model = env('AI_MODEL', 'llama-3.3-70b-versatile');
         $timeout = (int) env('AI_TIMEOUT', 120);
 
         if (!$apiKey) {
@@ -161,15 +163,17 @@ class PublicChatController extends Controller
                 ->withHeaders(['Accept' => 'application/json'])
                 ->withOptions(['buffer' => false])
                 ->post($apiBase . '/chat/completions', [
-                    'model'    => $model,
+                    'model' => $model,
                     'messages' => $messages,
-                    'stream'   => true,
+                    'stream' => true,
                 ]);
 
             if ($up->failed()) {
                 echo "event: error\n";
                 echo 'data: ' . json_encode(['error' => $up->body()], JSON_UNESCAPED_UNICODE) . "\n\n";
-                @ob_flush(); @flush(); return;
+                @ob_flush();
+                @flush();
+                return;
             }
 
             $assistant = '';
@@ -177,11 +181,15 @@ class PublicChatController extends Controller
 
             while (!$body->eof()) {
                 $chunk = $body->read(8192);
-                if (!$chunk) { usleep(10000); continue; }
+                if (!$chunk) {
+                    usleep(10000);
+                    continue;
+                }
 
                 foreach (preg_split("/\r\n|\n|\r/", $chunk) as $line) {
                     $line = trim($line);
-                    if ($line === '' || !str_starts_with($line, 'data:')) continue;
+                    if ($line === '' || !str_starts_with($line, 'data:'))
+                        continue;
 
                     $payload = trim(substr($line, 5));
                     if ($payload === '[DONE]') {
@@ -191,11 +199,14 @@ class PublicChatController extends Controller
                             if (isset($sessions[$sid])) {
                                 $sessions[$sid]['history'][] = ['role' => 'assistant', 'content' => $assistant];
                                 $r->session()->put('pub_sessions', $sessions);
+                                $r->session()->save(); // ← PENTING: paksa simpan dalam StreamedResponse
                             }
                         }
                         echo "event: done\n";
                         echo "data: {}\n\n";
-                        @ob_flush(); @flush(); return;
+                        @ob_flush();
+                        @flush();
+                        return;
                     }
 
                     $json = json_decode($payload, true);
@@ -204,7 +215,8 @@ class PublicChatController extends Controller
                         $assistant .= $delta;
                         echo "event: token\n";
                         echo 'data: ' . json_encode(['token' => $delta], JSON_UNESCAPED_UNICODE) . "\n\n";
-                        @ob_flush(); @flush();
+                        @ob_flush();
+                        @flush();
                     }
                 }
             }

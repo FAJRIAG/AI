@@ -5,40 +5,32 @@
   /* =======================================================
      THEME (GLOBAL) — bekerja meski halaman tanpa sidebar
      ======================================================= */
-  const htmlEl   = document.documentElement;
+  // Forcing dark theme globally
+  const htmlEl = document.documentElement;
+  htmlEl.setAttribute('data-theme', 'dark');
+
   const themeBtn = document.getElementById('themeToggle');
-
-  const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-  const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
-
-  function applyTheme(mode) {
-    const m = (mode === 'light') ? 'light' : 'dark';
-    htmlEl.setAttribute('data-theme', m);
-    lsSet('themeMode', m);
-    if (themeBtn) themeBtn.textContent = (m === 'light') ? 'Theme: Light' : 'Theme: Dark';
+  if (themeBtn) {
+    themeBtn.style.display = 'none';
   }
-  // Set awal (default dark)
-  applyTheme(lsGet('themeMode') || 'dark');
-
-  themeBtn?.addEventListener('click', () => {
-    const cur = htmlEl.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-    applyTheme(cur === 'light' ? 'dark' : 'light');
-  });
 
   /* =======================================================
      SIDEBAR TOGGLE — hanya berjalan jika elemen ada
      ======================================================= */
-  const layout   = document.getElementById('appLayout');
+  const layout = document.getElementById('appLayout');
   const backdrop = document.getElementById('sidebarBackdrop');
 
   // Jika tidak ada layout/backdrop (mis. halaman auth lain), cukup selesai di theme.
   if (!layout || !backdrop) return;
 
   // Helpers
-  const on   = (el, ev, fn) => el && el.addEventListener(ev, fn);
-  const $all = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-  const mm   = window.matchMedia ? window.matchMedia('(min-width:768px)') : { matches: innerWidth >= 768 };
+  const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
+  const $all = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const mm = window.matchMedia ? window.matchMedia('(min-width:768px)') : { matches: innerWidth >= 768 };
   const isDesktop = () => mm.matches;
+
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } };
 
   // Persist desktop collapse
   if (lsGet('sidebarCollapsed') === '1' && isDesktop()) {
@@ -64,9 +56,9 @@
       document.body.style.overflow = '';
     }
   }
-  const isMobileOpen       = () => layout.classList.contains('mobile-open');
-  const toggleMobile       = () => openMobile(!isMobileOpen());
-  const closeMobileIfOpen  = () => { if (isMobileOpen()) openMobile(false); };
+  const isMobileOpen = () => layout.classList.contains('mobile-open');
+  const toggleMobile = () => openMobile(!isMobileOpen());
+  const closeMobileIfOpen = () => { if (isMobileOpen()) openMobile(false); };
 
   // Anti double-tap (throttle)
   let lastTap = 0;
@@ -96,7 +88,7 @@
   // Saat beralih ke desktop, pastikan drawer tertutup
   const onBpChange = () => { if (isDesktop()) closeMobileIfOpen(); };
   if (mm.addEventListener) mm.addEventListener('change', onBpChange);
-  else if (mm.addListener)  mm.addListener(onBpChange); // Safari lama
+  else if (mm.addListener) mm.addListener(onBpChange); // Safari lama
   on(window, 'resize', onBpChange);
 
   // Auto-close ketika klik item chat / footer actions (mobile)
