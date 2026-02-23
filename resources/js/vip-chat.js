@@ -12,7 +12,7 @@ marked.setOptions({
 
 marked.use(markedKatex({
   throwOnError: false,
-  displayMode: false,
+  output: 'html',
 }));
 
 function renderMath(el) {
@@ -61,9 +61,9 @@ if (!window.__VIP_CHAT_INIT__) {
       const prepared = preprocessMath(s);
       const html = marked.parse(prepared || '');
       return DOMPurify.sanitize(html, {
-        USE_PROFILES: { html: true, mathml: true },
-        ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac', 'annotation-xml'],
-        ADD_ATTR: ['encoding', 'display', 'variant', 'width', 'height', 'style'],
+        USE_PROFILES: { html: true, svg: true },
+        ADD_TAGS: ['path'],
+        ADD_ATTR: ['d', 'viewBox', 'preserveAspectRatio'],
         FORBID_TAGS: ['style', 'script'],
         KEEP_CONTENT: true,
         RETURN_DOM_FRAGMENT: false
