@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AiChat
 {
@@ -49,22 +50,42 @@ class AiChat
         ];
 
         $keyManager = new AiKeyManager();
-        $apiKey = $keyManager->getCurrentKey();
+        $maxRetries = 3;
+        $attempt = 0;
+        $resp = null;
 
-        $resp = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $apiKey,
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ])
-            ->withOptions([
-                'stream' => true,
-                'timeout' => 0,
+        while ($attempt < $maxRetries) {
+            $apiKey = $keyManager->getCurrentKey();
+
+            if (!$apiKey) {
+                $onToken("\n\n(⚠️ Tidak ada API Key yang tersedia)");
+                return;
+            }
+
+            $resp = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
             ])
-            ->post($url, $payload);
+                ->withOptions([
+                    'stream' => true,
+                    'timeout' => 0,
+                ])
+                ->post($url, $payload);
 
-        if ($resp->failed()) {
-            $onToken("\n\n(⚠️ Gagal menghubungi model: " . $resp->status() . ")");
-            return;
+            if ($resp->successful()) {
+                break;
+            }
+
+            // Jika gagal (kemungkinan rate limit atau key mati), rotasi key dan coba lagi
+            Log::warning("AI request failed with status " . $resp->status() . " using key index " . ($attempt + 1) . ". Rotating key and retrying...");
+            $keyManager->rotateKey();
+            $attempt++;
+
+            if ($attempt >= $maxRetries) {
+                $onToken("\n\n(⚠️ Gagal menghubungi model setelah beberapa kali percobaan: " . $resp->status() . ")");
+                return;
+            }
         }
 
         $body = $resp->toPsrResponse()->getBody();
