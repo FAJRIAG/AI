@@ -38,7 +38,15 @@ if (!window.__VIP_CHAT_INIT__) {
 
     const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
     const scrollBottom = () => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; };
-    const md = (s) => DOMPurify.sanitize(marked.parse(s || ''));
+    const md = (s) => {
+      const html = marked.parse(s || '');
+      return DOMPurify.sanitize(html, {
+        USE_PROFILES: { html: true },
+        ADD_CLASSES: {
+          '*': ['katex', 'katex-display', 'katex-html', 'base', 'strut', 'mord', 'mbin', 'mrel', 'mopen', 'mclose', 'mpunct', 'mord', 'msupsub', 'vlist-t', 'vlist-r', 'vlist', 'vlist-s', 'reset-size1', 'reset-size2', 'reset-size3', 'reset-size4', 'reset-size5', 'reset-size6', 'reset-size7', 'reset-size8', 'reset-size9', 'reset-size10', 'reset-size11', 'mathnormal', 'mtight', 'mord', 'mop', 'mspace', 'delimsizing', 'inner', 'mfrac', 'small-op', 'op-symbol', 'root', 'sqrt', 'accent', 'mord', 'mord', 'mord', 'mord', 'mord', 'mord']
+        }
+      });
+    };
     const escapeHtml = (s) => (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     const autoResize = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 200) + 'px'; };
 

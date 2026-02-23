@@ -45,20 +45,29 @@ body {
 /* KaTeX custom styling */
 .katex-display {
   margin: 1.25rem 0 !important;
-  padding: 0.5rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow-x: auto;
   overflow-y: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .katex {
-  font-size: 1.1em;
+  font-size: 1.05em;
   line-height: 1.2;
+  color: #e5e7eb;
+  /* gray-200 */
 }
 
-.ai-bubble-container .katex {
+.katex-html {
   color: inherit;
+}
+
+.ai-bubble-container .katex,
+.ai-prose .katex {
+  color: #f3f4f6;
+  /* gray-100 */
 }
 
 ::-webkit-scrollbar {
