@@ -20,7 +20,7 @@ $keys = [
 $model = 'openai/gpt-oss-120b';
 $url = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/') . '/chat/completions';
 
-echo "Cek Limit Groq Model: $model\n";
+echo "Cek Limit Groq Model: Llm JriGPT\n";
 echo str_repeat("=", 85) . "\n";
 echo sprintf("%-10s | %-12s | %-25s | %-25s\n", "LLM", "Status", "Sisa Token per Menit", "Sisa Request per Hari");
 echo str_repeat("-", 85) . "\n";
