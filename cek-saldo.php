@@ -22,12 +22,12 @@ $url = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/') . '/c
 
 echo "Cek Limit Groq Model: $model\n";
 echo str_repeat("=", 85) . "\n";
-echo sprintf("%-10s | %-12s | %-25s | %-25s\n", "API Key", "Status", "Sisa Token per Menit", "Sisa Request per Hari");
+echo sprintf("%-10s | %-12s | %-25s | %-25s\n", "LLM", "Status", "Sisa Token per Menit", "Sisa Request per Hari");
 echo str_repeat("-", 85) . "\n";
 
 foreach ($keys as $idx => $key) {
     if (empty($key)) {
-        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "KOSONG", "-", "-");
+        echo sprintf("llm %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "KOSONG", "-", "-");
         continue;
     }
 
@@ -57,11 +57,11 @@ foreach ($keys as $idx => $key) {
         $strTPM = is_numeric($remainingTPM) ? number_format((float) $remainingTPM, 0, ',', '.') . " / " . number_format((float) $limitTPM, 0, ',', '.') : $remainingTPM;
         $strRPD = is_numeric($remainingRPD) ? number_format((float) $remainingRPD, 0, ',', '.') . " / " . number_format((float) $limitRPD, 0, ',', '.') : $remainingRPD;
 
-        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "OK [200]", $strTPM, $strRPD);
+        echo sprintf("llm %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "OK [200]", $strTPM, $strRPD);
     } elseif ($resp->status() === 429) {
-        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "LIMIT [429]", "0 (Habis)", "0 (Habis)");
+        echo sprintf("llm %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "LIMIT [429]", "0 (Habis)", "0 (Habis)");
     } else {
-        echo sprintf("Key %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "ERR [" . $resp->status() . "]", "-", "-");
+        echo sprintf("llm %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "ERR [" . $resp->status() . "]", "-", "-");
     }
 }
 echo str_repeat("=", 85) . "\n";
