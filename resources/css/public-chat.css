@@ -44,16 +44,21 @@ body {
 
 /* KaTeX custom styling */
 .katex-display {
-  margin: 1.5rem 0 !important;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border-radius: 16px;
+  margin: 2rem 0 !important;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
   overflow-x: auto;
   overflow-y: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(0, 0, 0, 0.2);
   text-align: center;
   display: block;
+}
+
+.katex-display>.katex {
+  font-size: 1.35em !important;
+  /* Larger display math */
 }
 
 /* Ensure KaTeX accessibility elements are REALLY hidden */
@@ -71,15 +76,22 @@ body {
 
 .katex {
   font-family: 'KaTeX_Main', 'Computer Modern Serif', serif !important;
-  font-size: 1.1em !important;
-  line-height: normal;
+  font-size: 1.15em !important;
+  line-height: 1.2 !important;
   color: #ffffff !important;
-  white-space: nowrap;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fix for inline math baseline */
+.katex .base {
+  padding: 2px 0;
 }
 
 .katex .mathnormal {
   font-family: 'KaTeX_Math', 'Computer Modern Serif', serif !important;
   font-style: italic;
+  font-weight: 500;
 }
 
 .katex-html {

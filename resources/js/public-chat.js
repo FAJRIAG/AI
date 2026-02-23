@@ -56,10 +56,16 @@ else {
 
   function preprocessMath(text) {
     if (!text) return '';
-    // Normalize delimiters to $ and $$ before marked parses it
+    // Strip blockquote '>' if it's inside or immediately before math blocks
+    // This is a common issue with LLM outputs
+    text = text.replace(/^\s*>\s*\$\$/gm, '$$');
+    text = text.replace(/\$\$>\s*/g, '$$');
+
+    // Normalize delimiters
     text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq.trim()}$$`);
     text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq.trim()}$`);
-    // Aggressive fix for models sending [ ... ] or ( ... ) containing math
+
+    // Fallback for fragmented math
     text = text.replace(/(?:\n|^)\[([\s\S]*?\\(?:mathbb|int|sum|frac|begin|alpha|beta|gamma|delta|le|ge|to|forall|equiv|boxed|quad|qquad)[\s\S]*?)\](?:\n|$)/g, (_, eq) => `$$${eq.trim()}$$`);
     return text;
   }
@@ -69,14 +75,14 @@ else {
     const html = marked.parse(prepared || '');
     return DOMPurify.sanitize(html, {
       USE_PROFILES: { html: true, mathml: true },
+      // Be extremely permissive with KaTeX tags and attributes to ensure "Premium" look
       ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac', 'annotation-xml'],
-      ADD_ATTR: ['encoding', 'display', 'variant'],
-      ADD_CLASSES: {
-        '*': ['katex', 'katex-display', 'katex-html', 'base', 'strut', 'mord', 'mbin', 'mrel', 'mopen', 'mclose', 'mpunct', 'msupsub', 'vlist-t', 'vlist-r', 'vlist', 'vlist-s', 'mathnormal', 'mtight', 'mop', 'mspace', 'delimsizing', 'mfrac', 'small-op', 'op-symbol', 'root', 'sqrt', 'accent', 'vlist-well', 'pstrut', 'vlist-well-n', 'vlist-well-m', 'vlist-well-s']
-      },
+      ADD_ATTR: ['encoding', 'display', 'variant', 'width', 'height', 'style'],
+      // Allow all classes dynamically to prevent stripping KaTeX layout
+      ADD_CLASSES: { '*': ['*'] },
       FORBID_TAGS: ['style', 'script'],
       KEEP_CONTENT: true,
-      FROM_TRUSTED_TYPE: true
+      RETURN_DOM_FRAGMENT: false
     });
   };
   const escapeHtml = (s) => s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
