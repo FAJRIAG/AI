@@ -107,13 +107,6 @@
         </a>
       @endauth
 
-      <button type="button" onclick="window.__openSettings?.()"
-        class="w-full inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-          <path stroke="currentColor" stroke-width="2" d="m11 4 1-2 1 2m7 7 2 1-2 1M4 13l-2-1 2-1m7 7 1 2 1-2" />
-        </svg>
-        Settings
-      </button>
     </div>
   </div>
 </aside>

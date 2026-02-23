@@ -38,7 +38,7 @@ class AiChat
     private function streamOpenAIResponses(array $messages, \Closure $onToken): void
     {
         $url = env('AI_API_BASE', 'https://api.groq.com/openai/v1') . '/chat/completions';
-        $model = env('AI_MODEL', 'llama-3.3-70b-versatile');
+        $model = env('AI_MODEL', 'openai/gpt-oss-120b');
 
         // Payload memakai gaya "messages" (chat-like)
         $payload = [
@@ -60,6 +60,7 @@ class AiChat
 
         // Baca SSE line-by-line
         $body = $resp->toPsrResponse()->getBody();
+        $buffer = '';
 
         while (!$body->eof()) {
             $chunk = $body->read(8192);
@@ -68,8 +69,11 @@ class AiChat
                 continue;
             }
 
-            // Server mengirim beberapa baris; kita proses tiap baris
-            foreach (preg_split("/\r\n|\n|\r/", $chunk) as $line) {
+            $buffer .= $chunk;
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = substr($buffer, 0, $pos);
+                $buffer = substr($buffer, $pos + 1);
+
                 $line = trim($line);
                 if ($line === '' || str_starts_with($line, ':'))
                     continue;

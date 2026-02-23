@@ -13,6 +13,7 @@ Route::post('/public/stream/{sid}', [PublicChatController::class, 'stream'])->na
 
 Route::view('/terms', 'public.terms')->name('terms');
 Route::view('/privacy', 'public.privacy')->name('privacy');
+Route::view('/pricing', 'auth.register')->name('pricing');
 
 Route::middleware(['auth', 'vip'])->group(function () {
     Route::get('/vip', [DashboardController::class, 'index'])->name('vip.home');

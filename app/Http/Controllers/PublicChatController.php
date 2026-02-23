@@ -66,7 +66,7 @@ class PublicChatController extends Controller
     public function index(Request $r)
     {
         // Redirect VIP / authenticated users to the VIP dashboard
-        if (auth()->check()) {
+        if (auth()->check() && auth()->user()->is_vip) {
             return redirect()->route('vip.home');
         }
 
@@ -152,11 +152,11 @@ class PublicChatController extends Controller
         // siapkan messages (max 40)
         $hist = array_slice($sessions[$sid]['history'], -40);
         $messages = array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], $hist);
-        array_unshift($messages, ['role' => 'system', 'content' => 'You are a helpful Indonesian AI assistant.']);
+        array_unshift($messages, ['role' => 'system', 'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?". Jangan PERNAH menyebutkan bahwa kamu adalah LLaMA, GPT, atau model yang dikembangkan oleh Meta, OpenAI, Claude, maupun pihak lain.']);
 
         $apiKey = env('AI_API_KEY');
         $apiBase = rtrim(env('AI_API_BASE', 'https://api.groq.com/openai/v1'), '/');
-        $model = env('AI_MODEL', 'llama-3.3-70b-versatile');
+        $model = env('AI_MODEL', 'openai/gpt-oss-120b');
         $timeout = (int) env('AI_TIMEOUT', 120);
 
         if (!$apiKey) {
@@ -183,6 +183,7 @@ class PublicChatController extends Controller
 
             $assistant = '';
             $body = $up->toPsrResponse()->getBody();
+            $buffer = '';
 
             while (!$body->eof()) {
                 $chunk = $body->read(8192);
@@ -191,7 +192,11 @@ class PublicChatController extends Controller
                     continue;
                 }
 
-                foreach (preg_split("/\r\n|\n|\r/", $chunk) as $line) {
+                $buffer .= $chunk;
+                while (($pos = strpos($buffer, "\n")) !== false) {
+                    $line = substr($buffer, 0, $pos);
+                    $buffer = substr($buffer, $pos + 1);
+
                     $line = trim($line);
                     if ($line === '' || !str_starts_with($line, 'data:'))
                         continue;

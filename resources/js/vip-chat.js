@@ -42,8 +42,16 @@ if (!window.__VIP_CHAT_INIT__) {
       if (existing) existing.remove();
 
       let html = codeText;
-      if (lang === 'css') html = `<style>${codeText}</style><div class="preview-msg">CSS dimuat. Tambahkan HTML untuk melihat hasilnya.</div>`;
-      if (lang === 'js' || lang === 'javascript') html = `<script defer>${codeText}<\/script><div class="preview-msg">JavaScript dimuat.</div>`;
+      if (lang === 'css') {
+        html = `<!DOCTYPE html><html><head><style>${codeText}</style></head>
+          <body style="padding:1rem; font-family:sans-serif; background:#fff; color:#000;">
+            <h2>CSS Terapan</h2>
+            <p>Tampilan ini memuat CSS yang ada di samping. Agar terlihat sempurna, elemen HTML terkait biasanya diperlukan.</p>
+            <div class="test-element hover-me button btn card">Elemen Uji Coba (Memiliki class umum seperti btn, card, dll)</div>
+          </body></html>`;
+      } else if (lang === 'js' || lang === 'javascript') {
+        html = `<script defer>${codeText}<\/script><div style="padding:1rem">JavaScript dimuat di background. Buka console browser untuk melihat log.</div>`;
+      }
 
       const modal = document.createElement('div');
       modal.id = 'livePreviewModal';
@@ -71,7 +79,10 @@ if (!window.__VIP_CHAT_INIT__) {
       document.body.appendChild(modal);
 
       const iframe = modal.querySelector('.lp-iframe');
-      const load = () => { iframe.contentDocument.open(); iframe.contentDocument.write(html); iframe.contentDocument.close(); };
+      const load = () => {
+        const blob = new Blob([html], { type: 'text/html' });
+        iframe.src = URL.createObjectURL(blob);
+      };
       load();
 
       const closeModal = () => {
@@ -110,7 +121,19 @@ if (!window.__VIP_CHAT_INIT__) {
           </div>
         `;
         header.querySelector('.code-copy-btn').addEventListener('click', (e) => {
-          const text = code?.innerText || '';
+          // Find raw unparsed text if available to prevent DOM sanitization stripping
+          const rawEl = pre.closest('article')?.previousElementSibling;
+          let text = code?.textContent || '';
+          if (rawEl && rawEl.classList.contains('ai-raw-content')) {
+            const blocks = rawEl.textContent.split('```');
+            for (let i = 1; i < blocks.length; i += 2) {
+              if (blocks[i] && blocks[i].toLowerCase().startsWith(lang.toLowerCase())) {
+                text = blocks[i].substring(lang.length).trim();
+                break;
+              }
+            }
+          }
+
           navigator.clipboard.writeText(text).then(() => {
             const btn = e.currentTarget;
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Tersalin!`;
@@ -120,7 +143,19 @@ if (!window.__VIP_CHAT_INIT__) {
 
         if (isPreviewable) {
           header.querySelector('.code-preview-btn').addEventListener('click', () => {
-            openPreview(code?.innerText || '', lang.toLowerCase());
+            // Find raw unparsed text if available to prevent DOM sanitization stripping
+            const rawEl = pre.closest('article')?.previousElementSibling;
+            let text = code?.textContent || '';
+            if (rawEl && rawEl.classList.contains('ai-raw-content')) {
+              const blocks = rawEl.textContent.split('```');
+              for (let i = 1; i < blocks.length; i += 2) {
+                if (blocks[i] && blocks[i].toLowerCase().startsWith(lang.toLowerCase())) {
+                  text = blocks[i].substring(lang.length).trim();
+                  break;
+                }
+              }
+            }
+            openPreview(text, lang.toLowerCase());
           });
         }
 
@@ -221,12 +256,22 @@ if (!window.__VIP_CHAT_INIT__) {
         }
 
         const reader = resp.body.getReader(); const decoder = new TextDecoder();
+        let buffer = '';
         while (true) {
           const { value, done } = await reader.read(); if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const block of chunk.split('\n\n')) {
-            const lines = block.split('\n'); if (lines.length < 2) continue;
-            const evt = lines[0].replace('event:', '').trim(); const data = lines[1].replace('data:', '').trim();
+          buffer += decoder.decode(value, { stream: true });
+
+          let boundary = buffer.indexOf('\n\n');
+          while (boundary !== -1) {
+            const block = buffer.slice(0, boundary).trim();
+            buffer = buffer.slice(boundary + 2);
+            boundary = buffer.indexOf('\n\n');
+
+            if (!block) continue;
+            const lines = block.split('\n');
+            if (lines.length < 2) continue;
+            const evt = lines[0].replace('event:', '').trim();
+            const data = lines.slice(1).join('\n').replace(/^data:\s*/, '').trim();
             try {
               const obj = JSON.parse(data);
               if (evt === 'token') { ai += obj.token; renderAI(ai, true); }

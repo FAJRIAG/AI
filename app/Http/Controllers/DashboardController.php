@@ -19,8 +19,13 @@ class DashboardController extends Controller
         $sid = $r->query('session');
 
         if ($sid !== null && $sid !== '') {
-            $currentSession = ChatSession::with('messages', 'project')->findOrFail($sid);
-            abort_unless($currentSession->project->user_id === $r->user()->id, 403);
+            try {
+                $currentSession = ChatSession::with('messages', 'project')->findOrFail($sid);
+                abort_unless($currentSession->project->user_id === $r->user()->id, 403);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                // Return to dashboard without the session ID so it selects/creates a new one
+                return redirect()->route('vip.home');
+            }
         } else {
             // Auto-select latest session or create a new one if none exists
             $latestSession = ChatSession::whereHas('project', function ($query) use ($r) {
