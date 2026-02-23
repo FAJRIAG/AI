@@ -65,6 +65,11 @@ class PublicChatController extends Controller
     // Halaman utama
     public function index(Request $r)
     {
+        // Redirect VIP / authenticated users to the VIP dashboard
+        if (auth()->check()) {
+            return redirect()->route('vip.home');
+        }
+
         $sid = $this->ensureCurrentSid($r, $r->query('sid'));
         $sessions = $this->getSessions($r);
 
