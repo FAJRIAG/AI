@@ -151,9 +151,12 @@ class PublicChatController extends Controller
         $sessions[$sid]['history'][] = ['role' => 'user', 'content' => $payload['content']];
         $this->saveSessions($r, $sessions);
 
-        // siapkan messages (max 40)
-        $hist = array_slice($sessions[$sid]['history'], -40);
-        $messages = array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], $hist);
+        // siapkan messages (max 15 agar payload tidak 413)
+        $hist = array_slice($sessions[$sid]['history'], -15);
+        $messages = array_map(fn($m) => [
+            'role' => $m['role'],
+            'content' => mb_strimwidth($m['content'], 0, 2000, "..."), // Truncate content
+        ], $hist);
         array_unshift($messages, ['role' => 'system', 'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?". Jangan PERNAH menyebutkan bahwa kamu adalah LLaMA, GPT, atau model yang dikembangkan oleh Meta, OpenAI, Claude, maupun pihak lain.']);
 
         $keyManager = new AiKeyManager();

@@ -50,7 +50,7 @@ class AiChat
         ];
 
         $keyManager = new AiKeyManager();
-        $maxRetries = 3;
+        $maxRetries = 10;
         $attempt = 0;
         $resp = null;
 

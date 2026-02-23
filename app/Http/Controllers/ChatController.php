@@ -23,17 +23,18 @@ class ChatController extends Controller
         // Simpan user message
         $session->messages()->create(['role' => 'user', 'content' => $data['content']]);
 
-        // Ambil 40 terakhir (by id desc), lalu urutkan naik agar kronologis
+        // Ambil 15 terakhir (by id desc), lalu urutkan naik agar kronologis
+        // Dibatasi ke 15 agar payload tidak terlalu besar (mencegah Error 413)
         $hist = $session->messages()
             ->orderBy('id', 'desc')
-            ->take(40)
+            ->take(15)
             ->get()
             ->sortBy('id')
             ->values();
 
         $messages = $hist->map(fn($m) => [
             'role' => $m->role,
-            'content' => $m->content,
+            'content' => mb_strimwidth($m->content, 0, 2000, "..."), // Truncate per message
         ])->all();
 
         array_unshift($messages, [
