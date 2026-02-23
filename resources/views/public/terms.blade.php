@@ -118,8 +118,8 @@
                 <section id="model-ai" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">2. Pemakaian Model Generatif AI</h2>
                     <p>
-                        Layanan kami menyediakan antarmuka interaktif yang didukung oleh model bahasa besar
-                        (Large Language Models) pihak ketiga untuk menghasilkan teks, analisis, dan cuplikan kode
+                        Layanan kami menyediakan antarmuka interaktif yang didukung oleh model LLM
+                        (*Large Language Model*) pihak ketiga untuk menghasilkan teks, analisis, dan cuplikan kode
                         pemrograman ("Keluaran").
                     </p>
                     <div class="bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl p-6 my-8">

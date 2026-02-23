@@ -157,8 +157,8 @@
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">3. Kredibilitas Transmisi ke Pihak
                         Ketiga</h2>
                     <p>
-                        Layanan JriGPT dibangun menggunakan integrasi API dengan model bahasa besar (*Large Language
-                        Models*) dari pihak ketiga secara awan (*cloud computation*). Perintah kueri yang Anda ajukan
+                        Layanan JriGPT dibangun menggunakan integrasi API dengan model LLM dari pihak ketiga secara awan
+                        (*cloud computation*). Perintah kueri yang Anda ajukan
                         dapat diproses pada server eksternal ini untuk memberikan balasan *generative* yang tepat.
                     </p>
                     <div class="bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl p-6 my-6">
@@ -195,10 +195,11 @@
                 </section>
 
                 <section id="korespondensi" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
-                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">5. Pusat Bantuan & Pertanyaan Privasi</h2>
+                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">5. Pusat Bantuan & Pertanyaan Privasi
+                    </h2>
                     <p>
-                        Apabila Anda memiliki pertanyaan lebih lanjut, kerahasiaan terkait data, atau ingin mengajukan 
-                        permintaan peninjauan hak pengguna Anda (*General Data Protection*), silakan hubungi tim layanan 
+                        Apabila Anda memiliki pertanyaan lebih lanjut, kerahasiaan terkait data, atau ingin mengajukan
+                        permintaan peninjauan hak pengguna Anda (*General Data Protection*), silakan hubungi tim layanan
                         bantuan kami melalui saluran resmi yang tersedia di *Dashboard* akun Anda.
                     </p>
                 </section>
