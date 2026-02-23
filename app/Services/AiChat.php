@@ -37,7 +37,7 @@ class AiChat
      */
     private function streamOpenAIResponses(array $messages, \Closure $onToken): void
     {
-        $url = config('ai.api_base', 'https://api.groq.com/openai/v1') . '/chat/completions';
+        $url = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/') . '/chat/completions';
         $model = config('ai.model', 'openai/gpt-oss-120b');
 
         // Payload memakai gaya "messages" (chat-like)
@@ -53,15 +53,20 @@ class AiChat
 
         $resp = Http::withHeaders([
             'Authorization' => 'Bearer ' . $apiKey,
+            'Accept' => 'application/json',
             'Content-Type' => 'application/json',
         ])
             ->withOptions([
                 'stream' => true,
-                'timeout' => 0,     // jangan time out saat streaming
+                'timeout' => 0,
             ])
             ->post($url, $payload);
 
-        // Baca SSE line-by-line
+        if ($resp->failed()) {
+            $onToken("\n\n(⚠️ Gagal menghubungi model: " . $resp->status() . ")");
+            return;
+        }
+
         $body = $resp->toPsrResponse()->getBody();
         $buffer = '';
 
@@ -81,35 +86,29 @@ class AiChat
                 if ($line === '' || str_starts_with($line, ':'))
                     continue;
 
-                // OpenAI Responses streaming mengirim "data: {json}" / "[DONE]"
                 if (!str_starts_with($line, 'data: '))
                     continue;
-                $json = substr($line, 6);
 
-                if ($json === '[DONE]') {
-                    break 2; // selesai
+                $jsonStr = substr($line, 6);
+                if ($jsonStr === '[DONE]') {
+                    break 2;
                 }
 
-                $obj = json_decode($json, true);
+                $obj = json_decode($jsonStr, true);
                 if (!is_array($obj))
                     continue;
 
-                // Event delta teks:
-                // type: "response.output_text.delta" -> field "delta"
-                $type = $obj['type'] ?? null;
+                // Standard OpenAI/Groq streaming format: choices[0].delta.content
+                $delta = $obj['choices'][0]['delta']['content'] ?? '';
+                if ($delta !== '') {
+                    $onToken($delta);
+                }
 
-                if ($type === 'response.output_text.delta') {
-                    $delta = $obj['delta'] ?? '';
-                    if ($delta !== '') {
-                        $onToken($delta);
-                    }
-                } elseif ($type === 'response.error') {
-                    $msg = $obj['error']['message'] ?? 'OpenAI error';
+                if (isset($obj['error'])) {
+                    $msg = $obj['error']['message'] ?? 'Unknown error';
                     $onToken("\n\n(⚠️ $msg)");
-                } elseif ($type === 'response.completed') {
                     break 2;
                 }
-                // (Event lain seperti tool-calls bisa ditangani sesuai kebutuhan ke depan.)
             }
         }
     }
