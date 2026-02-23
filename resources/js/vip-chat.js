@@ -1,5 +1,6 @@
 // resources/js/vip-chat.js
 import { marked } from 'marked';
+import markedKatex from 'marked-katex-extension';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 
@@ -8,6 +9,11 @@ marked.setOptions({
   breaks: true,       // convert \n to <br>
   gfm: true,          // GitHub Flavored Markdown (tables, code fences)
 });
+
+marked.use(markedKatex({
+  throwOnError: false,
+  output: 'html'
+}));
 
 if (!window.__VIP_CHAT_INIT__) {
   window.__VIP_CHAT_INIT__ = true;

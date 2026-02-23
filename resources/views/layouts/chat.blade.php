@@ -6,7 +6,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>@yield('title', 'JriGPT')</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
+    integrity="sha384-zh0CIsljE7vayia65P8Huv8Lq47h94K6vE/MToU4Q1/xscYAAu+rS7zWuP345E6A" crossorigin="anonymous">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   @vite([
     'resources/css/app.css',
@@ -32,21 +35,21 @@
         ])
       @endif
     </aside>
-
-    {{-- BACKDROP (mobile) --}}
-    <div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 hidden md:hidden"></div>
+   {{-- BACKDROP (mobile) --}}
+      <div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 hidden md:hidden"></div>
  
-     {{-- MAIN --}}
-  <div class="flex flex-col min-h-0">
-      {{-- Topbar (mobile) --}}
+      {{-- MAIN --}}
+ <div class="flex flex-col min-h-0">
+     {{-- Topbar (mobile) --}}
      @include('public.partials.topbar')
  
-       <main class="flex-1 min-h-0 flex flex-col">
+         <main class="flex-1 min-h-0 flex flex-col">
         @yield('content')
-      </main>
+        </main>
     {{-- Composer dipanggil di view masing-masing agar tidak dobel --}}
     </div>
-</div>
+  </div>
+
 
 
 @stack('modals')

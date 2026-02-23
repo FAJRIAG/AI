@@ -1,5 +1,5 @@
-// Jalan hanya di halaman public chat
 import { marked } from 'marked';
+import markedKatex from 'marked-katex-extension';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 
@@ -7,6 +7,11 @@ marked.setOptions({
   breaks: true,
   gfm: true,
 });
+
+marked.use(markedKatex({
+  throwOnError: false,
+  output: 'html'
+}));
 
 const pageRoot = document.querySelector('[data-page="public-chat"]');
 if (!pageRoot) { /* noop */ }
