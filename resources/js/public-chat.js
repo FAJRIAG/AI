@@ -51,10 +51,14 @@ else {
 
   function normalizeLaTeX(text) {
     if (!text) return '';
-    // Convert \[ ... \] to $$ ... $$
-    text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, equation) => `\n$$\n${equation.trim()}\n$$\n`);
-    // Convert \( ... \) to $ ... $
-    text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, equation) => `$${equation.trim()}$`);
+    // 1. Convert \[ ... \] to $$ ... $$ (with potential double backslashes)
+    text = text.replace(/\\+\[([\s\S]*?)\\+\]/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
+    // 2. Convert \( ... \) to $ ... $
+    text = text.replace(/\\+\(([\s\S]*?)\\+\)/g, (_, eq) => `$${eq.trim()}$`);
+    // 3. Fallback for [ ... ] or ( ... ) if they contain common LaTeX commands like \mathbb, \int, \sum, \frac, etc.
+    // This is risky but helps with models that fail to send backslashes before delimiters.
+    text = text.replace(/(?:\n|^)\[([\s\S]*?\\(?:mathbb|int|sum|frac|begin|alpha|beta|gamma|delta|le|ge|to|forall|equiv|boxed|quad|qquad)[\s\S]*?)\](?:\n|$)/g, (_, eq) => `\n$$\n${eq.trim()}\n$$\n`);
+    text = text.replace(/\(([^)]*?\\(?:mathbb|int|sum|frac|alpha|beta|gamma|delta|le|ge|to|forall|equiv)[\s\S]*?)\)/g, (_, eq) => `$${eq.trim()}$`);
     return text;
   }
 
@@ -62,9 +66,9 @@ else {
     const normalized = normalizeLaTeX(s);
     const html = marked.parse(normalized || '');
     return DOMPurify.sanitize(html, {
-      USE_PROFILES: { html: true },
-      ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation'],
-      ADD_ATTR: ['encoding'],
+      USE_PROFILES: { html: true, mathml: true },
+      ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac'],
+      ADD_ATTR: ['encoding', 'display'],
       FORBID_TAGS: ['style', 'script'],
       KEEP_CONTENT: true
     });
