@@ -124,7 +124,7 @@
             stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
-          Analisis logika matematika canggih (S2/S3)
+          Analisis logika matematika tingkat lanjut
         </li>
         <li class="flex items-start text-sm text-zinc-300">
           <svg class="h-4 w-4 text-emerald-400 mr-3 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24"
