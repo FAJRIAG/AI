@@ -52,9 +52,10 @@ if (!window.__VIP_CHAT_INIT__) {
 
       text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq.trim()}$$`);
       text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq.trim()}$`);
-      text = text.replace(/(?:\n|^)\[([\s\S]*?\\(?:mathbb|int|sum|frac|begin|alpha|beta|gamma|delta|le|ge|to|forall|equiv|boxed|quad|qquad)[\s\S]*?)\](?:\n|$)/g, (_, eq) => `$$${eq.trim()}$$`);
+
       return text;
     }
+
 
     const md = (s) => {
       const prepared = preprocessMath(s);
@@ -63,7 +64,6 @@ if (!window.__VIP_CHAT_INIT__) {
         USE_PROFILES: { html: true, mathml: true },
         ADD_TAGS: ['math', 'semantics', 'mrow', 'msub', 'msup', 'msubsup', 'mover', 'munder', 'munderover', 'mtable', 'mtr', 'mtd', 'maligngroup', 'malignmark', 'msline', 'annotation', 'mtext', 'mo', 'mn', 'mi', 'mspace', 'msqrt', 'mroot', 'mfrac', 'annotation-xml'],
         ADD_ATTR: ['encoding', 'display', 'variant', 'width', 'height', 'style'],
-        ADD_CLASSES: { '*': ['*'] },
         FORBID_TAGS: ['style', 'script'],
         KEEP_CONTENT: true,
         RETURN_DOM_FRAGMENT: false
