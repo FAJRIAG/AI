@@ -50,10 +50,6 @@ if (!window.__VIP_CHAT_INIT__) {
       text = text.replace(/^\s*>\s*\$\$/gm, '$$');
       text = text.replace(/\$\$>\s*/g, '$$');
 
-      // Normalize delimiters
-      text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq.trim()}$$`);
-      text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq.trim()}$`);
-
       return text;
     }
 
