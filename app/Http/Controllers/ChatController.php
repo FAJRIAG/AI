@@ -6,6 +6,7 @@ use App\Models\ChatSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Services\AiKeyManager;
+use App\Services\AiChat;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChatController extends Controller
@@ -51,83 +52,27 @@ class ChatController extends Controller
             return response()->json(['error' => 'AI API key missing'], 500);
         }
 
-        $resp = new StreamedResponse(function () use ($keyManager, $apiBase, $model, $timeout, $messages, $session) {
-            $apiKey = $keyManager->getCurrentKey();
-            $up = Http::withToken($apiKey)->timeout($timeout)
-                ->withHeaders(['Accept' => 'application/json'])
-                ->withOptions(['buffer' => false])
-                ->post($apiBase . '/chat/completions', [
-                    'model' => $model,
-                    'messages' => $messages,
-                    'stream' => true,
-                ]);
+        $resp = new StreamedResponse(function () use ($messages, $session) {
+            $ai = new AiChat();
+            $assistant = '';
 
-            if ($up->status() === 429) {
-                // Rotate key and retry once
-                $newKey = $keyManager->rotateKey();
-                if ($newKey) {
-                    $up = Http::withToken($newKey)->timeout($timeout)
-                        ->withHeaders(['Accept' => 'application/json'])
-                        ->withOptions(['buffer' => false])
-                        ->post($apiBase . '/chat/completions', [
-                            'model' => $model,
-                            'messages' => $messages,
-                            'stream' => true,
-                        ]);
-                }
-            }
-
-            if ($up->failed()) {
-                echo "event: error\n";
-                echo 'data: ' . json_encode(['error' => $up->body()]) . "\n\n";
+            $ai->stream($messages, function ($token) use (&$assistant, $session) {
+                $assistant .= $token;
+                echo "event: token\n";
+                echo 'data: ' . json_encode(['token' => $token], JSON_UNESCAPED_UNICODE) . "\n\n";
                 @ob_flush();
                 @flush();
-                return;
+            });
+
+            // Simpan ke database setelah streaming selesai
+            if (trim($assistant) !== '') {
+                $session->messages()->create(['role' => 'assistant', 'content' => $assistant]);
             }
 
-            $assistant = '';
-            $body = $up->toPsrResponse()->getBody();
-            $buffer = '';
-
-            while (!$body->eof()) {
-                $chunk = $body->read(8192);
-                if (!$chunk) {
-                    usleep(10000);
-                    continue;
-                }
-
-                $buffer .= $chunk;
-                while (($pos = strpos($buffer, "\n")) !== false) {
-                    $line = substr($buffer, 0, $pos);
-                    $buffer = substr($buffer, $pos + 1);
-
-                    $line = trim($line);
-                    if ($line === '' || !str_starts_with($line, 'data:'))
-                        continue;
-
-                    $payload = trim(substr($line, 5));
-                    if ($payload === '[DONE]') {
-                        if (trim($assistant) !== '') {
-                            $session->messages()->create(['role' => 'assistant', 'content' => $assistant]);
-                        }
-                        echo "event: done\n";
-                        echo "data: {}\n\n";
-                        @ob_flush();
-                        @flush();
-                        return;
-                    }
-
-                    $json = json_decode($payload, true);
-                    $delta = $json['choices'][0]['delta']['content'] ?? '';
-                    if ($delta !== '') {
-                        $assistant .= $delta;
-                        echo "event: token\n";
-                        echo 'data: ' . json_encode(['token' => $delta], JSON_UNESCAPED_UNICODE) . "\n\n";
-                        @ob_flush();
-                        @flush();
-                    }
-                }
-            }
+            echo "event: done\n";
+            echo "data: {}\n\n";
+            @ob_flush();
+            @flush();
         });
 
         $resp->headers->set('Content-Type', 'text/event-stream');
