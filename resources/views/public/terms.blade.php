@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ketentuan Layanan - JriGPT</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -101,68 +102,65 @@
         <main class="flex-1 min-w-0">
             <div class="prose prose-invert prose-emerald prose-lg max-w-3xl text-gray-300">
                 <p class="lead text-xl text-gray-300 mb-12">
-                    Selamat datang di platform JriGPT. Dokumen mengikat ini memuat syarat dan ketentuan tata tertib yang
-                    mengatur penggunaan fungsional Anda atas situs, integrasi antarmuka, dan layanan komputasi cerdas
-                    kami.
+                    Selamat datang di platform JriGPT. Dokumen ini memuat Syarat dan Ketentuan yang mengatur
+                    penggunaan Anda atas situs web, aplikasi, dan layanan kecerdasan buatan (AI) kami.
                 </p>
 
                 <section id="penerimaan" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">1. Penerimaan Ketentuan</h2>
                     <p>
-                        Dengan menginisiasi koneksi jaringan, mengakses, atau secara aktif menggunakan platform JriGPT,
-                        Anda menyatakan konfirmasi absolut bahwa Anda menerima regulasi ini secara utuh dan mengikatkan
-                        diri ke dalamnya secara hukum. Jika Anda berhalangan dalam menyetujui parameter ini, mohon agar
-                        Anda menghentikan pemakaian fasilitas (*terminate usage*) seketika.
+                        Dengan mengakses atau menggunakan platform JriGPT, Anda menyatakan bahwa Anda telah
+                        membaca, memahami, dan menyetujui seluruh isi Syarat dan Ketentuan ini. Jika Anda tidak
+                        menyetujui salah satu butir ketentuan, Anda harus segera menghentikan penggunaan layanan kami.
                     </p>
                 </section>
 
                 <section id="model-ai" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">2. Pemakaian Model Generatif AI</h2>
                     <p>
-                        Prinsip operasi layanan kami adalah menyediakan kueri langsung terhadap ekosistem komputasi
-                        kecerdasan buatan (*Large Language Models*)—menghasilkan teks, logika skrip, respons analitis,
-                        hingga komponen antarmuka yang didefinisikan secara kolektif sebagai "Keluaran Mesin".
+                        Layanan kami menyediakan antarmuka interaktif yang didukung oleh model bahasa besar
+                        (Large Language Models) pihak ketiga untuk menghasilkan teks, analisis, dan cuplikan kode
+                        pemrograman ("Keluaran").
                     </p>
                     <div class="bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl p-6 my-8">
-                        <h4 class="text-blue-400 font-semibold mb-2">Penafian Akurasi Otomatis</h4>
+                        <h4 class="text-blue-400 font-semibold mb-2">Penafian Akurasi AI</h4>
                         <p class="text-sm text-gray-300 m-0">
-                            Setiap Keluaran Mesin bersifat asimtotik dan diberikan secara "apa adanya" (*as is*).
-                            Entitas JriGPT tidak menanggung garansi terhadap kebenaran absolut, kepemilikan orisinal hak
-                            cipta, atau kemanjuran logika pemrograman (misal: kode yang rentan serangan siber) dari
-                            Keluaran tersebut.
+                            Setiap Keluaran AI disediakan sebagaimana adanya ("as is"). JriGPT tidak menjamin akurasi
+                            faktual, kelengkapan keamanan kode, atau kepemilikan hak cipta atas setiap informasi
+                            yang dihasilkan oleh model AI kami. Selalu lakukan verifikasi mandiri sebelum
+                            menggunakannya.
                         </p>
                     </div>
-                    <p>Selaku eksekutor akhir, pengguna **DILARANG KERAS** mendikte model bahasa kami guna mensintesis:
-                    </p>
+                    <p>Sebagai pengguna, Anda <strong>DILARANG</strong> menggunakan layanan kami untuk:</p>
                     <ul class="space-y-2 mb-6">
-                        <li><strong class="text-gray-200">Eksploitasi Kriminal:</strong> Termasuk skrip *malware*,
-                            peretasan korporat terenkripsi, atau penipuan jaringan ganda (*phishing*).</li>
-                        <li><strong class="text-gray-200">Konten Intimidasi:</strong> Narasi teror, ujaran kebencian
-                            rasial/politis yang ekstrem, atau manipulasi kekerasan.</li>
-                        <li><strong class="text-gray-200">Peretasan Moral:</strong> Pembangkitan material eksplisit yang
-                            dilarang undang-undang domestik maupun internasional.</li>
+                        <li><strong class="text-gray-200">Aktivitas Ilegal:</strong> Termasuk pembuatan perangkat
+                            perusak (*malware*), peretasan, pencurian data, atau penipuan.</li>
+                        <li><strong class="text-gray-200">Konten Berbahaya:</strong> Menghasilkan ujaran kebencian,
+                            diskriminasi, ancaman kekerasan, atau pelanggaran hak asasi manusia.</li>
+                        <li><strong class="text-gray-200">Pelanggaran Etika:</strong> Pembuatan material eksplisit,
+                            manipulasi politik, atau hal terkait yang bertentangan dengan hukum yang berlaku.</li>
                     </ul>
                 </section>
 
                 <section id="akun" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">3. Kredensial Akun & Akses VIP</h2>
                     <p>
-                        Manakala Anda mendaftarkan profil pengguna (*User Account*) atau diberikan mandataris
-                        keanggotaan VIP, Anda tunduk pada kewajiban perlindungan ganda: menjaga kerahasiaan token sesi
-                        (<em>password/api keys</em>) serta membatasi pertukaran otorisasi Anda. Hak privilese berjalur
-                        VIP bersifat eksklusif untuk perseorangan terkait dan diharamkan untuk disewakan massal secara
-                        ilegal.
+                        Saat Anda membuat akun atau mendaftar sebagai anggota VIP, Anda bertanggung jawab penuh untuk
+                        menjaga kerahasiaan kata sandi dan kredensial akses Anda. Akses akun berlangganan VIP bersifat
+                        pribadi
+                        dan tidak diperkenankan untuk dibagikan, dipindah-tangankan, atau disewakan kepada pihak lain.
                     </p>
                 </section>
 
                 <section id="kepatuhan-hukum" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">4. Pembatasan Tanggung Jawab</h2>
                     <p>
-                        Sampai melintasi batas ekstrem yuridis, pihak operasional JriGPT, insinyur penyusun, dan
-                        kolaborator ketiga (contoh: lisensi server) dinyatakan kebal dari tuntutan material tak
-                        berwujud, insidental yang membengkak, maupun efek komersial logis yang muncul—baik berupa
-                        lenyapnya daya komputasi (*server downtime*), hilangnya kapital/data pelanggan Anda, hingga
-                        sabotase *interface* imbas kegagalan penolakan sistem.
+                        Sejauh diizinkan oleh hukum yang berlaku, JriGPT beserta pengembang dan mitra layanan pihak
+                        ketiga
+                        tidak bertanggung jawab atas segala kerugian langsung, tidak langsung, atau insidental—termasuk
+                        namun tidak terbatas pada kehilangan keuntungan, gangguan bisnis, hingga hilangnya data—yang
+                        timbul
+                        akibat penggunaan atau ketidakmampuan Anda menggunakan layanan kami.
                     </p>
                 </section>
 
@@ -170,11 +168,10 @@
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">5. Keputusan dan Amandemen Dokumen
                     </h2>
                     <p>
-                        Kami membawahi wewenang sepihak (*unilateral discretion*) untuk mengevaluasi, menambahkan, atau
-                        membongkar poin-poin krusial dari Syarat Layanan ini seiring berjalannya dinamika teknologi dan
-                        rezim regulasi. Peringatan sekunder di luar halaman web tidak selalu dijamin; dengan itu,
-                        durabilitas persetujuan fungsional Anda mematenkan perlunya peninjauan proaktif atas halaman
-                        dokumentasi ini.
+                        JriGPT berhak memperbarui, memodifikasi, atau melakukan perubahan terhadap Syarat dan
+                        Ketentuan ini sewaktu-waktu sesuai dengan operasional layanan dan undang-undang yang berlaku.
+                        Perubahan akan berlaku segera setelah dipublikasikan pada halaman web ini. Anda diharapkan
+                        rutin meninjau halaman ini guna memahami setiap penyesuaian yang ada.
                     </p>
                 </section>
             </div>

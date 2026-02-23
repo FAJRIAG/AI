@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kebijakan Privasi - JriGPT</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%25' y='50%25' font-size='40' font-weight='bold' fill='white' font-family='Arial, sans-serif' text-anchor='middle' dominant-baseline='central'>JG</text></svg>">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -100,40 +101,32 @@
         <main class="flex-1 min-w-0">
             <div class="prose prose-invert prose-blue prose-lg max-w-3xl text-gray-300">
                 <p class="lead text-xl text-gray-300 mb-12">
-                    Grup pengembangan perangkat lunak <strong>JriGPT</strong> beserta seluruh entitas afiliasinya
-                    menaruh penghormatan yang ekstrem atas perimeter privasi data Anda. Kebijakan Privasi yang
-                    diformulasikan ini mengartikulasikan peta metodologi mengenai ekskavasi, penyimpanan, isolasi,
-                    hingga kompartementalisasi jejak data profil Anda di kala mengeja interaksi layanan *Live Chat*,
-                    fitur komputasi mutakhir, maupun parameter konfigurasi VIP.
+                    Tim pengembang <strong>JriGPT</strong> sangat menghargai privasi data Anda. Kebijakan Privasi ini
+                    menjelaskan bagaimana kami mengumpulkan, menggunakan, melindungi, dan menyebarkan informasi pribadi
+                    Anda ketika berinteraksi dengan layanan obrolan, komputasi cerdas, maupun penggunaan akses VIP kami.
                 </p>
 
                 <section id="pengumpulan-data" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">1. Kuantitas Koleksi Data</h2>
                     <p>
-                        Di tengah proses transisi menyuguhkan fasilitas komputasi AI kognitif yang memukau, instrumen
-                        pelacakan server JriGPT secara alamiah mengkoleksi agregasi lapisan informasi berikut dengan
-                        esensi moderasi minimum:
+                        Dalam menyediakan layanan AI cerdas kami, JriGPT perlu mengumpulkan beberapa informasi dasar
+                        pengguna, yang meliputi:
                     </p>
                     <ul class="space-y-4 mb-6">
                         <li class="pl-2">
-                            <strong class="text-gray-200 block mb-1">Kredensi Primer:</strong>
-                            Terangkum di dalamnya susunan identifikasi absolut seperti surel (*e-mail*) yang
-                            terverifikasi dan sidik sandi termutasi kriptografi (*hashed cryptography*) dalam *database*
-                            relasional.
+                            <strong class="text-gray-200 block mb-1">Informasi Akun:</strong>
+                            Data yang Anda berikan secara langsung, seperti alamat email (*) saat pendaftaran,
+                            serta kata sandi yang disimpan dalam format terenkripsi (*hashed*).
                         </li>
                         <li class="pl-2">
-                            <strong class="text-gray-200 block mb-1">Matriks Transmisi Obrolan (*Prompt
-                                History*):</strong>
-                            Secara konstan, tiap kalimat instruksi (*Chat Prompt*) yang diluncurkan menuju *server*
-                            beserta umpan balik balasan generatif (*AI Outputs*) akan dijilid di tabel sesi (*Session
-                            History*) guna memantik algoritma penalaran berkelanjutan dan mempertahankan hierarki UI
-                            percakapan.
+                            <strong class="text-gray-200 block mb-1">Riwayat Interaksi (Log Percakapan):</strong>
+                            Teks perintah (prompt) yang Anda masukkan serta tanggapan yang dihasilkan oleh AI
+                            akan disimpan sementara untuk mempertahankan konteks dalam sesi percakapan Anda.
                         </li>
                         <li class="pl-2">
-                            <strong class="text-gray-200 block mb-1">Telemetri Infrastruktural Dasar:</strong>
-                            Mengarsip atribut navigasi trivial seperti tanda baca *Internet Protocol* (*IP Address*)
-                            berskala anonim, arsitektur peramban interaksi, serta matriks frekuensi ketepatan interaksi
-                            GUI demi stabilitas diagnosa keramaian basis trafik.
+                            <strong class="text-gray-200 block mb-1">Data Perangkat & Akses:</strong>
+                            Pengumpulan log server standar seperti alamat Protokol Internet (IP), jenis browser,
+                            dan waktu akses guna memantau stabilitas jaringan dan mencegah penyalahgunaan.
                         </li>
                     </ul>
                 </section>
@@ -142,31 +135,31 @@
                     <h2 class="text-3xl font-bold text-white tracking-tight mb-6">2. Operasional Pemanfaatan Terapan
                     </h2>
                     <p>
-                        Seluruh jejak komputasi yang direstorasi wajib dialokasikan di dalam batuk-batas hukum murni
-                        tanpa pretensi pemasaran (*Zero-Datalyst Marketing Trade*). Pemakaian data difokuskan total
-                        secara krusial demi:
+                        Informasi yang kami kumpulkan akan kami operasikan secara berhati-hati sesuai batas hukum
+                        yang berlaku. Kami tidak menjual rekam jejak Anda kepada pihak periklanan. Penggunaan data
+                        difokuskan hanya untuk:
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-8">
                         <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <h4 class="text-white font-semibold mb-2">Presisi Mesin AI</h4>
-                            <p class="text-sm text-gray-400 m-0">Memompa efektivitas pembacaan skrip agar AI bisa
-                                menafsirkan variabel kode dan maksud perancangan yang diminta pengguna.</p>
+                            <h4 class="text-white font-semibold mb-2">Penyesuaian Model AI</h4>
+                            <p class="text-sm text-gray-400 m-0">Memastikan balasan AI dapat menafsirkan konteks
+                                pembicaraan dan permintaan Anda dengan lebih presisi.</p>
                         </div>
                         <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <h4 class="text-white font-semibold mb-2">Resiliensi Server</h4>
-                            <p class="text-sm text-gray-400 m-0">Menyaring dan menambal potensi insiden peretasan masif,
-                                luapan jaringan DDoS (<em>Denial of Service</em>), maupun interupsi anomali lainnya.</p>
+                            <h4 class="text-white font-semibold mb-2">Keamanan & Keandalan</h4>
+                            <p class="text-sm text-gray-400 m-0">Menganalisis anomali pada tingkat penggunaan,
+                                menambal kerentanan jaringan, serta mitigasi serangan DDoS.</p>
                         </div>
                     </div>
                 </section>
 
                 <section id="komputasi-eksternal" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
-                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">3. Kredibilitas Transmisi ke Agensi
-                        Pihak Ketiga</h2>
+                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">3. Kredibilitas Transmisi ke Pihak
+                        Ketiga</h2>
                     <p>
-                        Jantung neuron artifisial JriGPT bernapas melalui integrasi API (*Application Programming
-                        Interface*) dengan utilitas berskalasi global (*LLM Groq/Llama Meta Core*). Segala baris
-                        perintah Anda akan dimutasikan temporer pada server mesin tersebut di awan.
+                        Layanan JriGPT dibangun menggunakan integrasi API dengan model bahasa besar (*Large Language
+                        Models*) dari pihak ketiga secara awan (*cloud computation*). Perintah kueri yang Anda ajukan
+                        dapat diproses pada server eksternal ini untuk memberikan balasan *generative* yang tepat.
                     </p>
                     <div class="bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl p-6 my-6">
                         <h4 class="text-blue-400 font-semibold mb-2 flex items-center gap-2">
@@ -175,38 +168,38 @@
                                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
                                 </path>
                             </svg>
-                            Sumpah Etika Model AI Bebas Pencemaran Pelatihan (*Training Deprivation Oaths*)
+                            Persetujuan Model Bebas Pelatihan (*Zero Data Retention*)
                         </h4>
                         <p class="text-sm text-gray-300 m-0">
-                            JriGPT secara mutlak mengatur perjanjian API komersial dimana <strong>penyedia AI Pihak
-                                Ketiga sepenuhnya dianulir dan diharamkan</strong> menggunakan, mengekstrak, atau
-                            menduplikasi satupun rekaman diskusi obrolan dan kode sintaks pribadi milik Anda sebagai
-                            bahan bakar pelestarian (*training datasets*) bagi Large Language Model asaliah mereka dalam
-                            kancah ranah korporat bebas.
+                            Kami memastikan bahwa penyedia API pihak ketiga yang kami gunakan diwajibkan oleh perjanjian
+                            untuk <strong>tidak menggunakan rekaman percakapan Anda maupun data internal sistem
+                                lainnya</strong>
+                            sebagai basis data pelatihan (*training datasets*) pemodelan AI mereka yang bersifat publik.
                         </p>
                     </div>
                 </section>
 
                 <section id="retensi" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
-                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">4. Siklus Retensi dan Eksekusi
-                        Keamanan</h2>
+                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">4. Siklus Retensi dan Keamanan Data
+                    </h2>
                     <p>
-                        Arsitektur basis data relasional kami diamankan di perimeter rahasia yang terkungkung
-                        konfigurasi mutakhir (<em>Transport Layer Security TLS 1.3</em>). Pengguna berhak mengeksekusi
-                        inisiatif sepihak untuk menebas eksistensi *database* riwayat mereka (`/delete/session`).
-                        Sinkronisasi ini akan langsung membakar riwayat bersangkutan (*Force-Nulling*). Namun, segmen
-                        data trivial telemetrik (arsip statistik) mungkin berada dalam antrian retensi teknis *log
-                        server* sebelum dihaluskan.
+                        Basis data kami dilindungi menggunakan standar enkripsi terkini (<em>Transport Layer Security
+                            TLS 1.3</em>).
+                        Anda memiliki kendali penuh terhadap sesi obrolan Anda dan dapat menghapus riwayat tersebut.
+                        Saat sebuah
+                        sesi dihapus, rekaman percakapan akan langsung ditiadakan dari sistem basis data.
+                        Namun, data diagnostik dan agregat teknis pada *server logs* mungkin dipertahankan selama
+                        periode tertentu
+                        guna mematuhi prosedur operasional.
                     </p>
                 </section>
 
                 <section id="korespondensi" class="scroll-mt-32 mb-16 border-t border-white/5 pt-10">
-                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">5. Pusat Korespondensi Legal</h2>
+                    <h2 class="text-3xl font-bold text-white tracking-tight mb-6">5. Pusat Bantuan & Pertanyaan Privasi</h2>
                     <p>
-                        Silakan ajukan surat protes fungsional maupun formulasi pertanggungjawaban yuridis terkait
-                        regulasi data umum dunia yang berpotensi melintasi benak (*General Data Protection Regulation
-                        Rights*) melalui saluran korespondensi primer kami di jalur yang tersedia di wilayah *Dashboard*
-                        operasional secara interaktif.
+                        Apabila Anda memiliki pertanyaan lebih lanjut, kerahasiaan terkait data, atau ingin mengajukan 
+                        permintaan peninjauan hak pengguna Anda (*General Data Protection*), silakan hubungi tim layanan 
+                        bantuan kami melalui saluran resmi yang tersedia di *Dashboard* akun Anda.
                     </p>
                 </section>
             </div>
