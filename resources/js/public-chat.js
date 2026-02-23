@@ -54,11 +54,34 @@ else {
   const scrollBottom = () => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; };
   const autoResize = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 200) + 'px'; };
 
+  function hideIncompleteMath(text) {
+    if (!text) return '';
+    let openBlock = (text.match(/\\\[/g) || []).length;
+    let closeBlock = (text.match(/\\\]/g) || []).length;
+    if (openBlock > closeBlock) {
+      const lastIndex = text.lastIndexOf('\\[');
+      if (lastIndex !== -1) return text.substring(0, lastIndex);
+    }
+    let openInline = (text.match(/\\\(/g) || []).length;
+    let closeInline = (text.match(/\\\)/g) || []).length;
+    if (openInline > closeInline) {
+      const lastIndex = text.lastIndexOf('\\(');
+      if (lastIndex !== -1) return text.substring(0, lastIndex);
+    }
+    return text;
+  }
+
   function preprocessMath(text) {
     if (!text) return '';
     // Fix blockquote leak: "> $$" -> "$$"
     text = text.replace(/^\s*>\s*\$\$/gm, '$$');
     text = text.replace(/\$\$>\s*/g, '$$');
+
+    // Convert \[ \] and \( \) to $$ and $ so marked-katex-extension can parse them
+    text = text.replace(/\\\[/g, '$$$$');
+    text = text.replace(/\\\]/g, '$$$$');
+    text = text.replace(/\\\(/g, '$$');
+    text = text.replace(/\\\)/g, '$$');
 
     return text;
   }
@@ -297,7 +320,7 @@ else {
           if (lines.length < 2) continue;
           const evt = lines[0].replace('event:', '').trim();
           const data = lines.slice(1).join('\n').replace(/^data:\s*/, '').trim();
-          try { const obj = JSON.parse(data); if (evt === 'token') { ai += obj.token; renderAI(ai, true); } } catch (e) { }
+          try { const obj = JSON.parse(data); if (evt === 'token') { ai += obj.token; renderAI(hideIncompleteMath(ai), true); } } catch (e) { }
         }
       }
     } catch (e) {
@@ -306,6 +329,7 @@ else {
         renderAI('(Batas harian non-VIP untuk IP ini telah tercapai. Login VIP untuk akses tanpa batas.)');
       }
     } finally {
+      if (ai) renderAI(ai, true);
       typingEl?.classList.add('hidden');
       sendBtn?.classList.remove('opacity-60', 'pointer-events-none');
       stopBtn?.classList.add('hidden');

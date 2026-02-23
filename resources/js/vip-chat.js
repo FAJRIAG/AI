@@ -44,11 +44,34 @@ if (!window.__VIP_CHAT_INIT__) {
     const scrollBottom = () => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; };
     const autoResize = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 200) + 'px'; };
 
+    function hideIncompleteMath(text) {
+      if (!text) return '';
+      let openBlock = (text.match(/\\\[/g) || []).length;
+      let closeBlock = (text.match(/\\\]/g) || []).length;
+      if (openBlock > closeBlock) {
+        const lastIndex = text.lastIndexOf('\\[');
+        if (lastIndex !== -1) return text.substring(0, lastIndex);
+      }
+      let openInline = (text.match(/\\\(/g) || []).length;
+      let closeInline = (text.match(/\\\)/g) || []).length;
+      if (openInline > closeInline) {
+        const lastIndex = text.lastIndexOf('\\(');
+        if (lastIndex !== -1) return text.substring(0, lastIndex);
+      }
+      return text;
+    }
+
     function preprocessMath(text) {
       if (!text) return '';
       // Strip blockquote '>' if it's inside or immediately before math blocks
       text = text.replace(/^\s*>\s*\$\$/gm, '$$');
       text = text.replace(/\$\$>\s*/g, '$$');
+
+      // Convert \[ \] and \( \) to $$ and $ so marked-katex-extension can parse them
+      text = text.replace(/\\\[/g, '$$$$');
+      text = text.replace(/\\\]/g, '$$$$');
+      text = text.replace(/\\\(/g, '$$');
+      text = text.replace(/\\\)/g, '$$');
 
       return text;
     }
@@ -314,7 +337,7 @@ if (!window.__VIP_CHAT_INIT__) {
             const data = lines.slice(1).join('\n').replace(/^data:\s*/, '').trim();
             try {
               const obj = JSON.parse(data);
-              if (evt === 'token') { ai += obj.token; renderAI(ai, true); }
+              if (evt === 'token') { ai += obj.token; renderAI(hideIncompleteMath(ai), true); }
               if (evt === 'error') { renderAI('(Gagal menghubungi model. Periksa API key atau jaringan.)'); }
             } catch (e) { }
           }
@@ -322,6 +345,7 @@ if (!window.__VIP_CHAT_INIT__) {
       } catch (e) {
         if (e.name !== 'AbortError') { renderAI('(Gagal menghubungi model. Periksa API key atau jaringan.)'); console.error(e); }
       } finally {
+        if (ai) renderAI(ai, true);
         typingEl?.classList.add('hidden');
         sendBtn?.classList.remove('opacity-60', 'pointer-events-none');
         stopBtn?.classList.add('hidden');
