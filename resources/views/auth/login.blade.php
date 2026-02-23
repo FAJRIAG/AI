@@ -173,8 +173,9 @@
       {{-- Compliance --}}
       <p class="mt-12 text-center text-xs text-gray-600">
         © {{ date('Y') }} JriGPT. Dengan masuk, Anda menyetujui<br>
-        <a href="#" class="underline hover:text-gray-400 transition">Ketentuan</a> dan <a href="#"
-          class="underline hover:text-gray-400 transition">Kebijakan Privasi</a>.
+        <a href="{{ url('/terms') }}" class="underline hover:text-gray-400 transition" target="_blank">Ketentuan</a> dan
+        <a href="{{ url('/privacy') }}" class="underline hover:text-gray-400 transition" target="_blank">Kebijakan
+          Privasi</a>.
       </p>
     </div>
   </main>

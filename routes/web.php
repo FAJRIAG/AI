@@ -11,6 +11,9 @@ Route::post('/public/rename/{sid}', [PublicChatController::class, 'rename'])->na
 Route::post('/public/delete/{sid}', [PublicChatController::class, 'delete'])->name('public.delete');
 Route::post('/public/stream/{sid}', [PublicChatController::class, 'stream'])->name('public.stream');
 
+Route::view('/terms', 'public.terms')->name('terms');
+Route::view('/privacy', 'public.privacy')->name('privacy');
+
 Route::middleware(['auth', 'vip'])->group(function () {
     Route::get('/vip', [DashboardController::class, 'index'])->name('vip.home');
     Route::get('/app', [DashboardController::class, 'index'])->name('chat.dashboard');
