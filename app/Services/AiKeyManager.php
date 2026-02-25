@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 class AiKeyManager
 {
     private const CACHE_KEY = 'ai_api_key_index';
-    private const MAX_KEYS = 10;
+    private const MAX_KEYS = 12;
 
     /**
      * Get the current active API key.
@@ -58,7 +58,7 @@ class AiKeyManager
     {
         $keys = [];
 
-        // Check for AI_API_KEY_1 to AI_API_KEY_10
+        // Check for AI_API_KEY_1 to AI_API_KEY_12
         for ($i = 1; $i <= self::MAX_KEYS; $i++) {
             $key = config("ai.api_key_$i");
             if ($key) {

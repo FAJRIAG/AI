@@ -15,6 +15,8 @@ $keys = [
     config('ai.api_key_8'),
     config('ai.api_key_9'),
     config('ai.api_key_10'),
+    config('ai.api_key_11'),
+    config('ai.api_key_12'),
 ];
 
 $model = 'openai/gpt-oss-120b';

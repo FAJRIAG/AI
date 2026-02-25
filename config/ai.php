@@ -21,4 +21,6 @@ return [
     'api_key_8' => env('AI_API_KEY_8'),
     'api_key_9' => env('AI_API_KEY_9'),
     'api_key_10' => env('AI_API_KEY_10'),
+    'api_key_11' => env('AI_API_KEY_11'),
+    'api_key_12' => env('AI_API_KEY_12'),
 ];
