@@ -33,7 +33,7 @@ foreach ($keys as $idx => $key) {
         continue;
     }
 
-    $shortKey = substr($key, 0, 8) . '...';
+
 
     $resp = \Illuminate\Support\Facades\Http::withHeaders([
         'Authorization' => 'Bearer ' . $key,

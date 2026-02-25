@@ -31,7 +31,7 @@ foreach ($keys as $idx => $key) {
         continue;
     }
 
-    $shortKey = substr($key, 0, 8) . '...' . substr($key, -4);
+
 
     $resp = \Illuminate\Support\Facades\Http::withHeaders([
         'Authorization' => 'Bearer ' . $key,
@@ -44,13 +44,13 @@ foreach ($keys as $idx => $key) {
             ]);
 
     if ($resp->successful()) {
-        echo "Key " . ($idx + 1) . " ($shortKey) : OK [200]\n";
+        echo "Key " . ($idx + 1) . " : OK [200]\n";
     } elseif ($resp->status() === 429) {
         $data = $resp->json();
         $msg = $data['error']['message'] ?? 'Rate limit exceeded';
-        echo "Key " . ($idx + 1) . " ($shortKey) : RATE LIMIT [429] - " . (str_contains($msg, 'Tokens per Day') ? 'TPD limit habis' : 'Limit lain') . "\n";
+        echo "Key " . ($idx + 1) . " : RATE LIMIT [429] - " . (str_contains($msg, 'Tokens per Day') ? 'TPD limit habis' : 'Limit lain') . "\n";
     } else {
-        echo "Key " . ($idx + 1) . " ($shortKey) : ERROR [" . $resp->status() . "]\n";
+        echo "Key " . ($idx + 1) . " : ERROR [" . $resp->status() . "]\n";
     }
 }
 echo "=================================================\n";
