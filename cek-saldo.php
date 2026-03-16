@@ -19,10 +19,10 @@ $keys = [
     config('ai.api_key_12'),
 ];
 
-$model = 'openai/gpt-oss-120b';
-$url = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/') . '/chat/completions';
+$model = config('ai.model', 'jrigpt');
+$url = rtrim(config('ai.api_base', 'https://api.jrigpt.fajriag.my.id/api/v1'), '/') . '/chat/completions';
 
-echo "Cek Limit Groq Model: Llm JriGPT\n";
+echo "Cek Limit Model: $model\n";
 echo str_repeat("=", 85) . "\n";
 echo sprintf("%-10s | %-12s | %-25s | %-25s\n", "LLM", "Status", "Sisa Token per Menit", "Sisa Request per Hari");
 echo str_repeat("-", 85) . "\n";
@@ -64,6 +64,7 @@ foreach ($keys as $idx => $key) {
         echo sprintf("llm %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "LIMIT [429]", "0 (Habis)", "0 (Habis)");
     } else {
         echo sprintf("llm %-6d | %-12s | %-25s | %-25s\n", $idx + 1, "ERR [" . $resp->status() . "]", "-", "-");
+        echo "   -> Detail: " . $resp->body() . "\n";
     }
 }
 echo str_repeat("=", 85) . "\n";
