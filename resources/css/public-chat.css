@@ -448,5 +448,64 @@ body {
   left: 0;
   z-index: 50;
   width: 280px;
+}
+
+/* === Artifacts Panel (Claude Style) === */
+#appLayout {
+  transition: grid-template-columns 0.3s ease-in-out;
+}
+
+#appLayout[data-artifacts="open"] {
+  grid-template-columns: 280px 1fr 45%;
+}
+
+#appLayout.sidebar-hidden[data-artifacts="open"] {
+  grid-template-columns: 1fr 45%;
+}
+
+@media (max-width: 1023px) {
+  #appLayout[data-artifacts="open"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+#artifactsSidebar {
+  z-index: 40;
+  box-shadow: -10px 0 30px -15px rgba(0, 0, 0, 0.5);
+}
+
+#appLayout[data-artifacts="open"] #artifactsSidebar {
   transform: translateX(0);
+}
+
+#appLayout[data-artifacts="closed"] #artifactsSidebar {
+  display: none !important;
+}
+
+/* Mermaid Customization */
+#artifactMermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-loading {
+  opacity: 0.5;
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+/* Artifact Controls Ripple/Hover */
+#artifactCopy:active, #artifactDownload:active {
+  transform: scale(0.95);
+}
+
+/* Iframe adjustments */
+#artifactIframe {
+  background: white;
+  border-radius: 4px;
+}
+
+/* If artifact is code/mermaid, hide empty state */
+.has-artifact #artifactEmpty {
+  display: none !important;
 }

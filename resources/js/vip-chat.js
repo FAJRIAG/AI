@@ -15,6 +15,16 @@ marked.use(markedKatex({
   output: 'html',
 }));
 
+// Mermaid Init
+if (window.mermaid) {
+  window.mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose',
+    fontFamily: 'Inter, sans-serif',
+  });
+}
+
 function renderMath(el) {
   // Relying on marked-katex-extension.
 }
@@ -38,6 +48,7 @@ if (!window.__VIP_CHAT_INIT__) {
     const searchEl = document.getElementById('chatSearch');
     const selectedModeInput = document.getElementById('selectedMode');
     const modeButtons = document.querySelectorAll('.mode-btn');
+    const layout = document.getElementById('appLayout');
 
     // DOM Elements Upload & Drag-Drop
     const dropZone = document.getElementById('dropZone');
@@ -54,9 +65,134 @@ if (!window.__VIP_CHAT_INIT__) {
     let currentAttachmentUrl = null;
     let isUploading = false;
 
+    // ===== Artifact Manager (Claude Style) =====
+    const ArtifactManager = {
+      panel: document.getElementById('artifactsSidebar'),
+      iframe: document.getElementById('artifactIframe'),
+      mermaidContainer: document.getElementById('artifactMermaid'),
+      emptyState: document.getElementById('artifactEmpty'),
+      title: document.getElementById('artifactTitle'),
+      copyBtn: document.getElementById('artifactCopy'),
+      downloadBtn: document.getElementById('artifactDownload'),
+      closeBtn: document.getElementById('artifactClose'),
+      currentContent: '',
+      currentLang: '',
+
+      init() {
+        if (!this.panel) return;
+        on(this.closeBtn, 'click', () => this.close());
+        on(this.copyBtn, 'click', () => {
+          navigator.clipboard.writeText(this.currentContent).then(() => {
+            const original = this.copyBtn.innerHTML;
+            this.copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+            setTimeout(() => this.copyBtn.innerHTML = original, 1500);
+          });
+        });
+        on(this.downloadBtn, 'click', () => this.download());
+      },
+
+      open() {
+        if (!layout) return;
+        layout.setAttribute('data-artifacts', 'open');
+        this.panel.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          this.panel.classList.remove('translate-x-full');
+        });
+      },
+
+      close() {
+        if (!layout) return;
+        layout.setAttribute('data-artifacts', 'closed');
+        this.panel.classList.add('translate-x-full');
+        setTimeout(() => this.panel.classList.add('hidden'), 300);
+      },
+
+      update(content) {
+        // Find code blocks: ```lang\ncode\n```
+        const regex = /```(html|css|js|javascript|mermaid)[\s\n]+([\s\S]*?)(?:```|$)/gi;
+        let lastBlock = null;
+        let match;
+        
+        while ((match = regex.exec(content)) !== null) {
+            lastBlock = { lang: match[1].toLowerCase(), code: match[2].trim() };
+        }
+
+        if (lastBlock) {
+          this.render(lastBlock.code, lastBlock.lang);
+          if (layout.getAttribute('data-artifacts') === 'closed') {
+            this.open();
+          }
+        }
+      },
+
+      render(code, lang) {
+        if (this.currentContent === code && this.currentLang === lang) return;
+        this.currentContent = code;
+        this.currentLang = lang;
+        this.title.innerText = `Preview ${lang.toUpperCase()}`;
+        
+        this.emptyState?.classList.add('hidden');
+        document.getElementById('artifactContent')?.classList.add('has-artifact');
+
+        if (lang === 'mermaid') {
+          this.iframe?.classList.add('hidden');
+          this.mermaidContainer?.classList.remove('hidden');
+          this.renderMermaid(code);
+        } else {
+          this.mermaidContainer?.classList.add('hidden');
+          this.iframe?.classList.remove('hidden');
+          this.renderCode(code, lang);
+        }
+      },
+
+      renderCode(code, lang) {
+        if (!this.iframe) return;
+        let fullHtml = code;
+        if (lang === 'css') {
+          fullHtml = `<!DOCTYPE html><html><head><style>${code}</style></head><body>${this.getGenericTestHtml()}</body></html>`;
+        } else if (lang === 'js' || lang === 'javascript') {
+          fullHtml = `<!DOCTYPE html><html><body><script>${code}<\/script><p>JS is running. Check console if needed.</p></body></html>`;
+        } else if (lang === 'html' && !code.toLowerCase().includes('<html')) {
+          fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-white p-4 text-black">${code}</body></html>`;
+        }
+
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        this.iframe.src = URL.createObjectURL(blob);
+      },
+
+      async renderMermaid(code) {
+        if (!window.mermaid || !this.mermaidContainer) return;
+        try {
+          const { svg } = await window.mermaid.render('mermaid-' + Date.now(), code);
+          this.mermaidContainer.innerHTML = svg;
+        } catch (e) {
+          // Silently fail during typing
+        }
+      },
+
+      getGenericTestHtml() {
+         return `<div class="p-8">
+            <h2 class="text-2xl font-bold mb-4">CSS Preview</h2>
+            <button class="btn px-4 py-2 bg-blue-500 text-white rounded">Button</button>
+            <div class="card p-4 border mt-4">Card Element</div>
+          </div>`;
+      },
+
+      download() {
+        const ext = this.currentLang === 'mermaid' ? 'svg' : 'html';
+        const blob = new Blob([this.currentContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `artifact-${Date.now()}.${ext}`;
+        a.click();
+      }
+    };
     const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
     const scrollBottom = () => { if (scrollEl) scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' }); };
     const autoResize = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 200) + 'px'; };
+
+    ArtifactManager.init();
 
     function hideIncompleteMath(text) {
       if (!text) return '';
@@ -130,65 +266,7 @@ if (!window.__VIP_CHAT_INIT__) {
     const escapeHtml = (s) => (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
 
     // Preview modal
-    function openPreview(codeText, lang) {
-      const existing = document.getElementById('livePreviewModal');
-      if (existing) existing.remove();
-
-      let html = codeText;
-      if (lang === 'css') {
-        html = `<!DOCTYPE html><html><head><style>${codeText}</style></head>
-          <body style="padding:1rem; font-family:sans-serif; background:#fff; color:#000;">
-            <h2>CSS Terapan</h2>
-            <p>Tampilan ini memuat CSS yang ada di samping. Agar terlihat sempurna, elemen HTML terkait biasanya diperlukan.</p>
-            <div class="test-element hover-me button btn card">Elemen Uji Coba (Memiliki class umum seperti btn, card, dll)</div>
-          </body></html>`;
-      } else if (lang === 'js' || lang === 'javascript') {
-        html = `<script defer>${codeText}<\/script><div style="padding:1rem">JavaScript dimuat di background. Buka console browser untuk melihat log.</div>`;
-      }
-
-      const modal = document.createElement('div');
-      modal.id = 'livePreviewModal';
-      modal.innerHTML = `
-        <div class="lp-backdrop"></div>
-        <div class="lp-panel">
-          <div class="lp-header">
-            <span class="lp-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
-              Live Preview
-              <span class="lp-lang">${lang}</span>
-            </span>
-            <div class="lp-actions">
-              <button class="lp-btn lp-refresh" title="Refresh">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              </button>
-              <button class="lp-btn lp-close" title="Tutup">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-          </div>
-          <iframe class="lp-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      const iframe = modal.querySelector('.lp-iframe');
-      const load = () => {
-        const blob = new Blob([html], { type: 'text/html' });
-        iframe.src = URL.createObjectURL(blob);
-      };
-      load();
-
-      const closeModal = () => {
-        modal.classList.remove('lp-open');
-        modal.style.pointerEvents = 'none';
-        setTimeout(() => modal.remove(), 400); // 400ms corresponds to transition time in css
-      };
-
-      modal.querySelector('.lp-close').addEventListener('click', closeModal);
-      modal.querySelector('.lp-refresh').addEventListener('click', load);
-      modal.querySelector('.lp-backdrop').addEventListener('click', closeModal);
-      requestAnimationFrame(() => modal.classList.add('lp-open'));
-    }
+    // openPreview removed and replaced by ArtifactManager.render/open
 
     function enhanceCode(scope) {
       scope.querySelectorAll('pre code').forEach(block => {
@@ -198,7 +276,7 @@ if (!window.__VIP_CHAT_INIT__) {
         if (pre.querySelector('.code-header')) return; // already enhanced
         const code = pre.querySelector('code');
         const lang = code?.className?.match(/language-(\w+)/)?.[1] || '';
-        const isPreviewable = ['html', 'css', 'js', 'javascript'].includes(lang.toLowerCase());
+        const isPreviewable = ['html', 'css', 'js', 'javascript', 'mermaid'].includes(lang.toLowerCase());
 
         // Build Gemini-style header
         const header = document.createElement('div');
@@ -248,7 +326,8 @@ if (!window.__VIP_CHAT_INIT__) {
                 }
               }
             }
-            openPreview(text, lang.toLowerCase());
+            ArtifactManager.render(text, lang.toLowerCase());
+            ArtifactManager.open();
           });
         }
 
@@ -278,6 +357,7 @@ if (!window.__VIP_CHAT_INIT__) {
         art.innerHTML = md(content);
         renderMath(art);
         enhanceCode(chatList.lastChild);
+        ArtifactManager.update(content);
         scrollBottom();
         return;
       }
@@ -287,6 +367,7 @@ if (!window.__VIP_CHAT_INIT__) {
       chatList.appendChild(row);
       renderMath(row.querySelector('article'));
       enhanceCode(row);
+      ArtifactManager.update(content);
       scrollBottom();
     }
 
