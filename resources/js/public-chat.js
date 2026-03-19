@@ -44,14 +44,26 @@ else {
   const renameInput = document.getElementById('renameInput');
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+  // Element Upload & Drag-Drop
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const attachBtn = document.getElementById('attachBtn');
+  const attachmentPreviewContainer = document.getElementById('attachmentPreviewContainer');
+  const attachmentPreviewImg = document.getElementById('attachmentPreviewImg');
+  const removeAttachmentBtn = document.getElementById('removeAttachmentBtn');
+  const sendSpinner = document.getElementById('sendSpinner');
+  const sendText = document.getElementById('sendText');
+
   // State
   let controller = null;
   let lastUserMsg = '';
+  let currentAttachmentUrl = null;
+  let isUploading = false;
 
   // Utils
   const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
   const qsAll = (s, root = document) => Array.from(root.querySelectorAll(s));
-  const scrollBottom = () => { if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight; };
+  const scrollBottom = () => { if (scrollEl) scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' }); };
   const autoResize = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 200) + 'px'; };
 
   function hideIncompleteMath(text) {
@@ -253,9 +265,14 @@ else {
     });
   }
 
-  function renderUser(text) {
+  function renderUser(text, attachmentUrl = null) {
     const row = document.createElement('div'); row.className = 'fade-in flex';
+    let imgHtml = '';
+    if (attachmentUrl) {
+      imgHtml = `<img src="${attachmentUrl}" class="max-w-xs mb-2 rounded border border-white/10" />`;
+    }
     row.innerHTML = `<div class="ml-auto max-w-[80%] rounded-2xl bg-[#1a1f2a] px-4 py-2 ring-1 ring-white/10">
+      ${imgHtml}
       <div class="whitespace-pre-wrap leading-6 text-gray-100">${escapeHtml(text)}</div></div>`;
     chatList.appendChild(row); scrollBottom();
   }
@@ -305,16 +322,104 @@ else {
   on(themeBtn, 'click', () => { document.documentElement.classList.toggle('dark'); try { localStorage.setItem('themeDark', document.documentElement.classList.contains('dark') ? '1' : '0'); } catch (e) { } });
 
   // ===== Scroll UI =====
-  on(scrollEl, 'scroll', () => { const nearBottom = (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight) < 80; toBottom?.classList.toggle('hidden', nearBottom); });
+  on(scrollEl, 'scroll', () => { 
+    const farFromBottom = (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight) > 300; 
+    toBottom?.classList.toggle('hidden', !farFromBottom); 
+  });
   on(toBottom, 'click', scrollBottom);
   on(promptEl, 'input', () => autoResize(promptEl));
+
+  // ===== Upload Logic =====
+  const stopUploadState = () => { isUploading = false; sendSpinner.classList.add('hidden'); sendText.innerText = 'Kirim'; };
+  const startUploadState = () => { isUploading = true; sendSpinner.classList.remove('hidden'); sendText.innerText = '...'; };
+  const removeImage = () => {
+    currentAttachmentUrl = null;
+    attachmentPreviewContainer.classList.add('hidden');
+    attachmentPreviewImg.src = '';
+    if(fileInput) fileInput.value = '';
+  };
+  on(removeAttachmentBtn, 'click', removeImage);
+  on(attachBtn, 'click', () => { if(!isUploading && fileInput) fileInput.click() });
+
+  async function handleFileUpload(file) {
+    if (!file) return;
+
+    const isImage = file.type.startsWith('image/');
+    const isDoc = file.type === 'application/pdf' || file.type === 'text/plain' || file.type === 'text/csv' || file.name.endsWith('.docx');
+
+    if (!isImage && !isDoc) { 
+      alert('Format file tidak didukung. Gunakan Gambar, PDF, TXT, atau CSV.'); 
+      return; 
+    }
+
+    startUploadState();
+
+    if (isImage) {
+      attachmentPreviewImg.src = URL.createObjectURL(file);
+    } else {
+      // Placeholder icon untuk dokumen
+      attachmentPreviewImg.src = 'https://cdn-icons-png.flaticon.com/512/2991/2991108.png';
+    }
+
+    attachmentPreviewContainer.classList.remove('hidden');
+    
+    const fd = new FormData(); fd.append('image', file);
+    try {
+      const res = await fetch('/public/upload-image', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken }, body: fd });
+      const data = await res.json();
+      if (res.ok) { 
+          currentAttachmentUrl = data.attachment_url; 
+          if (isImage) attachmentPreviewImg.src = data.url;
+      }
+      else { alert('Gagal mengupload file.'); removeImage(); }
+    } catch(e) { alert('Gagal mengupload file.'); removeImage(); }
+    finally { stopUploadState(); }
+  }
+
+  on(fileInput, 'change', e => { if(e.target.files && e.target.files[0]) handleFileUpload(e.target.files[0]) });
+
+  // ===== Drag and Drop Logic =====
+  if (dropZone) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+    
+    document.addEventListener('dragover', (e) => {
+      if (isUploading) return;
+      if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+        dropZone.classList.remove('hidden');
+        dropZone.classList.add('flex');
+      }
+    });
+    
+    document.addEventListener('dragleave', (e) => {
+      // Hide dropZone if drag leaves window
+      if (e.relatedTarget === null || e.relatedTarget.nodeName === 'HTML') {
+        dropZone.classList.add('hidden');
+        dropZone.classList.remove('flex');
+      }
+    });
+
+    document.addEventListener('drop', (e) => {
+      dropZone.classList.add('hidden');
+      dropZone.classList.remove('flex');
+      if (isUploading) return;
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileUpload(e.dataTransfer.files[0]);
+      }
+    });
+  }
 
   // ===== Streaming =====
   async function sendMessage(contentOverride = null) {
     const content = (contentOverride ?? promptEl.value).trim();
-    if (!content || controller) return;
+    if ((!content && !currentAttachmentUrl) || controller || isUploading) return;
 
-    lastUserMsg = content; promptEl.value = ''; autoResize(promptEl); renderUser(content);
+    lastUserMsg = content; 
+    promptEl.value = ''; 
+    autoResize(promptEl); 
+    const attachedDbUrl = currentAttachmentUrl;
+    const attachedPreviewSrc = attachmentPreviewImg.src;
+    
+    renderUser(content, attachedDbUrl ? attachedPreviewSrc : null);
 
     controller = new AbortController();
     sendBtn?.classList.add('opacity-60', 'pointer-events-none');
@@ -323,8 +428,12 @@ else {
 
     let ai = '';
     try {
+      const payload = { content: content, attachment_url: attachedDbUrl };
+      // Bersihkan UI staging SETELAH payload ditangkap
+      removeImage(); 
+
       const resp = await fetch(`${window.location.origin}/public/stream/${encodeURIComponent(SID)}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify({ content }), signal: controller.signal
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload), signal: controller.signal
       });
       if (!resp.ok || !resp.body) throw new Error('Bad response');
       const reader = resp.body.getReader(); const decoder = new TextDecoder();
@@ -344,7 +453,20 @@ else {
           if (lines.length < 2) continue;
           const evt = lines[0].replace('event:', '').trim();
           const data = lines.slice(1).join('\n').replace(/^data:\s*/, '').trim();
-          try { const obj = JSON.parse(data); if (evt === 'token') { ai += obj.token; renderAI(hideIncompleteMath(ai), true); } } catch (e) { }
+          try {
+            const obj = JSON.parse(data);
+            if (evt === 'token') {
+              ai += obj.token;
+              
+              if (ai.includes('[HIDE_TOOL_CALL]')) {
+                  ai = ai.replace(/tool_call_name[\s\S]*?\{[\s\S]*?\}/gi, '');
+                  ai = ai.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
+              }
+              
+              renderAI(hideIncompleteMath(ai), true);
+            }
+            if (evt === 'error') { renderAI('(Sedang sibuk atau API Error. Cobalah kembali nanti.)'); }
+          } catch (e) { }
         }
       }
     } catch (e) {

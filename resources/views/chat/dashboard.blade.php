@@ -55,7 +55,14 @@
       </aside>
 
       {{-- Main --}}
-      <main class="flex-1 flex flex-col">
+      <main class="flex-1 flex flex-col relative" 
+            @dragover.prevent="isDragging = true" 
+            @dragleave.prevent="if($event.relatedTarget === null || $event.relatedTarget.nodeName === 'HTML') isDragging = false" 
+            @drop.prevent="isDragging = false; handleFileDrop($event)">
+        <!-- Dropzone Overlay -->
+        <div x-show="isDragging" class="absolute inset-0 bg-indigo-50/90 z-50 flex items-center justify-center border-4 border-dashed border-indigo-400 m-4 rounded-xl backdrop-blur-sm" style="display: none;">
+          <span class="text-indigo-600 font-bold text-xl drop-shadow-sm pointer-events-none">Lepaskan gambar di sini...</span>
+        </div>
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
           <div class="flex items-center gap-2">
             @if($currentSession)
@@ -94,11 +101,27 @@
 
         @if($currentSession)
           <div class="border-t border-gray-200 bg-white">
-            <div class="max-w-3xl mx-auto p-3 flex gap-2">
-              <textarea x-model="input" x-on:keydown.enter.prevent="submit" placeholder="Tulis pesan…"
-                class="flex-1 resize-none rounded border border-gray-300 bg-white text-gray-800 p-2"></textarea>
-              <button x-bind:disabled="loading || !input.trim()" x-on:click="submit"
-                class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-60">Kirim</button>
+            <div class="max-w-3xl mx-auto p-3">
+              <!-- Image Preview -->
+              <div x-show="attachmentPreview" class="mb-2 relative inline-block">
+                <img :src="attachmentPreview" class="h-20 w-auto rounded border border-gray-300 object-cover">
+                <button @click="removeImage" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">&times;</button>
+              </div>
+              <div class="flex gap-2 items-end">
+                <input type="file" x-ref="imageInput" @change="handleFileUpload" accept="image/*" class="hidden">
+                <button @click="$refs.imageInput.click()" type="button" class="p-2 text-gray-500 hover:text-indigo-600 rounded" :disabled="isUploading">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <textarea x-model="input" x-on:keydown.enter.prevent="submit" placeholder="Tulis pesan…"
+                  class="flex-1 resize-none rounded border border-gray-300 bg-white text-gray-800 p-2"></textarea>
+                <button x-bind:disabled="loading || isUploading || (!input.trim() && !attachmentUrl)" x-on:click="submit"
+                  class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-60 flex items-center justify-center min-w-[5rem]">
+                  <span x-show="isUploading" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-1"></span>
+                  <span x-text="isUploading ? '...' : 'Kirim'"></span>
+                </button>
+              </div>
             </div>
           </div>
         @endif
@@ -113,6 +136,8 @@
     function chatApp() {
       return {
         sessionId: null, messages: [], input: '', loading: false, _aiStreamingNode: null,
+        attachmentUrl: null, attachmentPreview: null, isUploading: false, isDragging: false,
+
         initSession(id, initial) { this.sessionId = id; this.messages = initial || []; this.renderAll(); this.scrollBottom(); },
         renderAll() { const list = document.getElementById('msgList'); list.innerHTML = ''; for (const m of this.messages) { list.appendChild(this.renderMsg(m)); } },
         renderMsg(m) {
@@ -125,20 +150,71 @@
           bubble.className = (m.role === 'user' ? 'bg-indigo-600 text-white ml-auto' : 'bg-gray-100 text-gray-800') + ' rounded-lg px-3 py-2 prose prose-invert max-w-full';
           let html = DOMPurify.sanitize(marked.parse(m.content || ''));
           bubble.innerHTML = html;
+          if (m.attachment_url) {
+            const img = document.createElement('img');
+            img.src = '/storage/' + m.attachment_url;
+            img.className = 'max-w-xs mt-2 rounded border border-gray-200';
+            bubble.appendChild(img);
+          }
           if (m.role === 'user') { row.appendChild(bubble); row.appendChild(avatar); } else { row.appendChild(avatar); row.appendChild(bubble); }
           wrap.appendChild(row); return wrap;
         },
         addMsg(m) { this.messages.push(m); document.getElementById('msgList').appendChild(this.renderMsg(m)); },
         showTyping(v) { document.getElementById('typing').classList.toggle('hidden', !v); },
         scrollBottom() { const s = document.getElementById('scrollArea'); s.scrollTop = s.scrollHeight; },
+        handleFileDrop(e) {
+          if (this.isUploading) return;
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            this.handleFileUpload({ target: { files: e.dataTransfer.files } });
+          }
+        },
+        async handleFileUpload(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          this.isUploading = true;
+          this.attachmentPreview = URL.createObjectURL(file);
+          
+          const fd = new FormData();
+          fd.append('image', file);
+          
+          try {
+            const res = await fetch('/chat/upload-image', {
+              method: 'POST',
+              headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+              body: fd
+            });
+            const data = await res.json();
+            if (res.ok) {
+              this.attachmentUrl = data.attachment_url;
+            } else {
+              alert('Gagal mengupload gambar.');
+              this.removeImage();
+            }
+          } catch (err) {
+            alert('Gagal mengupload gambar.');
+            this.removeImage();
+          } finally {
+            this.isUploading = false;
+          }
+        },
+        removeImage() {
+          this.attachmentUrl = null;
+          this.attachmentPreview = null;
+          this.$refs.imageInput.value = '';
+        },
         async submit() {
-          if (!this.input.trim() || this.loading) return;
-          const content = this.input; this.input = ''; this.addMsg({ role: 'user', content }); this.scrollBottom();
+          if ((!this.input.trim() && !this.attachmentUrl) || this.loading || this.isUploading) return;
+          const content = this.input; 
+          const attachment = this.attachmentUrl;
+          this.input = ''; 
+          this.removeImage();
+          this.addMsg({ role: 'user', content, attachment_url: attachment }); 
+          this.scrollBottom();
           this.loading = true; this.showTyping(true);
 
           const resp = await fetch(`/sessions/${this.sessionId}/stream`, {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, attachment_url: attachment })
           });
           if (!resp.ok || !resp.body) { this.addMsg({ role: 'assistant', content: '(Error JriGPT)' }); this.loading = false; this.showTyping(false); return; }
 

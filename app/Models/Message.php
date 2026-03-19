@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Message extends Model
 {
-    protected $fillable = ['chat_session_id','role','content'];
+    protected $fillable = ['chat_session_id','role','content','attachment_url'];
 
     public function session(): BelongsTo { return $this->belongsTo(ChatSession::class,'chat_session_id'); }
 }

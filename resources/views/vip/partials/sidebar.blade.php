@@ -126,6 +126,14 @@ FOOTER (tetap di bawah)
 ========================= --}}
 <div id="sidebarFooter" class="mt-auto bg-[#0c1117] border-t border-white/10">
   <div class="px-3 py-2 space-y-2">
+    <a href="{{ route('docs') }}"
+      class="w-full inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-emerald-400">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+      API Docs
+    </a>
     <a href="{{ route('logout') }}"
       class="w-full inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-red-500 font-semibold">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">

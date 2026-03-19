@@ -22,3 +22,11 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# IDE Helper & Temporary
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+cookies.txt
+/storage/app/public/chat_docs/*
+!.gitignore

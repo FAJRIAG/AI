@@ -4,6 +4,7 @@ return [
     'provider' => env('AI_PROVIDER', 'groq'),
     'api_base' => env('AI_API_BASE', 'https://api.groq.com/openai/v1'),
     'model' => env('AI_MODEL', 'openai/gpt-oss-120b'),
+    'vision_model' => env('AI_VISION_MODEL', 'llama-3.2-90b-vision-preview'),
     'temperature' => (float) env('AI_TEMPERATURE', 0.2),
     'timeout' => (int) env('AI_TIMEOUT', 120),
 

@@ -25,6 +25,20 @@
           @else
             <div class="fade-in flex">
               <div class="ml-auto max-w-[80%] rounded-2xl bg-[#1a1f2a] px-4 py-2 ring-1 ring-white/10">
+                @if(!empty($m->attachment_url))
+                  @php
+                    $isImg = preg_match('/\.(jpg|jpeg|png|gif|webp|svg)$/i', $m->attachment_url);
+                  @endphp
+                  @if($isImg)
+                    <img src="{{ \Storage::url($m->attachment_url) }}" class="max-w-xs mb-2 rounded border border-white/10">
+                  @else
+                    {{-- Icon Dokumen (PDF/TXT/CSV) --}}
+                    <div class="flex items-center gap-2 mb-2 p-2 bg-white/5 rounded border border-white/10">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991108.png" class="size-6 object-contain">
+                        <span class="text-xs text-gray-400 truncate max-w-[150px]">{{ basename($m->attachment_url) }}</span>
+                    </div>
+                  @endif
+                @endif
                 <div class="whitespace-pre-wrap leading-6 text-gray-100">{{ $content }}</div>
               </div>
             </div>
@@ -48,7 +62,7 @@
       </div>
     </div>
 
-    <button id="toBottom" class="hidden fixed bottom-24 right-6 md:right-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 text-sm backdrop-blur">
+    <button id="toBottom" class="hidden fixed bottom-24 right-6 md:right-10 z-50 rounded-full bg-black/60 hover:bg-emerald-600/20 border border-white/20 hover:border-emerald-500/50 px-4 py-2 text-sm backdrop-blur-md text-white transition-all shadow-xl">
       ↓ Scroll to bottom
     </button>
   </section>

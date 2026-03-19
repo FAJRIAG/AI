@@ -14,6 +14,19 @@
         @else
           <div class="fade-in flex">
             <div class="ml-auto max-w-[80%] rounded-2xl bg-[#1a1f2a] px-4 py-2 ring-1 ring-white/10">
+              @if(!empty($m['attachment_url']))
+                @php
+                  $isImg = preg_match('/\.(jpg|jpeg|png|gif|webp|svg)$/i', $m['attachment_url']);
+                @endphp
+                @if($isImg)
+                  <img src="{{ \Storage::url($m['attachment_url']) }}" class="max-w-xs mb-2 rounded border border-white/10">
+                @else
+                  <div class="flex items-center gap-2 mb-2 p-2 bg-white/5 rounded border border-white/10">
+                      <img src="https://cdn-icons-png.flaticon.com/512/2991/2991108.png" class="size-6 object-contain">
+                      <span class="text-xs text-gray-400 truncate max-w-[150px]">{{ basename($m['attachment_url']) }}</span>
+                  </div>
+                @endif
+              @endif
               <div class="whitespace-pre-wrap leading-6 text-gray-100">{{ $m['content'] ?? '' }}</div>
             </div>
           </div>
@@ -38,28 +51,13 @@
 
     {{-- Scroll to bottom --}}
     <button id="toBottom"
-      class="hidden fixed bottom-24 right-6 md:right-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 text-sm backdrop-blur">
+      class="hidden fixed bottom-24 right-6 md:right-10 z-50 rounded-full bg-black/60 hover:bg-emerald-600/20 border border-white/20 hover:border-emerald-500/50 px-4 py-2 text-sm backdrop-blur-md text-white transition-all shadow-xl">
       ↓ Scroll to bottom
     </button>
   </section>
 
-  {{-- Composer --}}
-  <footer class="border-t border-white/10 bg-gradient-to-b from-transparent">
-    <div class="max-w-3xl mx-auto px-4 py-4">
-      <div class="flex items-end gap-2">
-        <textarea id="prompt" rows="1" placeholder="Tulis pesan…" class="flex-1 resize-none rounded-2xl bg-[#0c1117] border border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-600/60
-                     px-4 py-3 leading-6 text-gray-100 placeholder:text-gray-500"></textarea>
-        <button id="send"
-          class="shrink-0 rounded-2xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 font-semibold transition">Kirim</button>
-        <button id="stop" class="shrink-0 hidden rounded-2xl bg-white/10 px-4 py-3">Stop</button>
-      </div>
-      <div class="mt-2 flex items-center justify-between text-[11px] text-gray-400">
-        <div>Enter = kirim • Shift+Enter = baris baru • Markdown & code didukung</div>
-        {{-- <button id="regen"
-          class="px-2 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10">Regenerate</button> --}}
-      </div>
-    </div>
-  </footer>
+  {{-- Composer dipanggil dari partials --}}
+  @include('public.partials.composer')
 @endsection
 
 @push('modals')

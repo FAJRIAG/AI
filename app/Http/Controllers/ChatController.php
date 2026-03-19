@@ -18,10 +18,19 @@ class ChatController extends Controller
         // Pastikan milik user login
         abort_unless($session->project && $session->project->user_id === $r->user()->id, 403);
 
-        $data = $r->validate(['content' => 'required|string']);
+        $data = $r->validate([
+            'content' => 'required|string',
+            'attachment_url' => 'nullable|string'
+        ]);
+
+        \Log::info("Stream Request Data:", $data);
 
         // Simpan user message
-        $session->messages()->create(['role' => 'user', 'content' => $data['content']]);
+        $userMsgData = ['role' => 'user', 'content' => $data['content']];
+        if (!empty($data['attachment_url'])) {
+            $userMsgData['attachment_url'] = $data['attachment_url'];
+        }
+        $session->messages()->create($userMsgData);
 
         // Ambil 15 terakhir (by id desc), lalu urutkan naik agar kronologis
         // Dibatasi ke 15 agar payload tidak terlalu besar (mencegah Error 413)
@@ -32,17 +41,66 @@ class ChatController extends Controller
             ->sortBy('id')
             ->values();
 
-        $messages = $hist->map(fn($m) => [
-            'role' => $m->role,
-            'content' => mb_strimwidth($m->content, 0, 2000, "..."), // Truncate per message
-        ])->all();
+        $messages = $hist->map(function ($m) {
+            if ($m->attachment_url && \Storage::disk('public')->exists($m->attachment_url)) {
+                $path = \Storage::disk('public')->path($m->attachment_url);
+                $mime = mime_content_type($path);
+                
+                // JIKA GAMBAR -> Gunakan struktur Vision (Multi-modal)
+                if (str_starts_with($mime, 'image/')) {
+                    $b64 = base64_encode(file_get_contents($path));
+                    return [
+                        'role' => $m->role,
+                        'content' => [
+                            ['type' => 'text', 'text' => mb_strimwidth($m->content, 0, 4000, "...")] ,
+                            ['type' => 'image_url', 'image_url' => ['url' => "data:$mime;base64,$b64"]]
+                        ]
+                    ];
+                } 
+                
+                // JIKA DOKUMEN (PDF/TXT/CSV) -> Ekstrak teks dan tempel ke prompt (Opsi A)
+                $extractedText = "";
+                try {
+                    if ($mime === 'application/pdf') {
+                        $parser = new \Smalot\PdfParser\Parser();
+                        $pdf = $parser->parseFile($path);
+                        $extractedText = $pdf->getText();
+                    } elseif (in_array($mime, ['text/plain', 'text/csv', 'application/octet-stream'])) {
+                        $extractedText = file_get_contents($path);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error("Gagal ekstrak dokumen: " . $e->getMessage());
+                }
+
+                if (!empty($extractedText)) {
+                    $docContext = "\n\n--- ISI DOKUMEN (" . basename($m->attachment_url) . ") ---\n" . mb_strimwidth($extractedText, 0, 30000) . "\n--- AKHIR DOKUMEN ---\n";
+                    return [
+                        'role' => $m->role,
+                        'content' => $m->content . $docContext
+                    ];
+                }
+            }
+            
+            return [
+                'role' => $m->role,
+                'content' => mb_strimwidth($m->content, 0, 4000, "..."),
+            ];
+        })->all();
+
+        // Ambil Memori Jangka Panjang (Fase 4)
+        $memoryService = new \App\Services\MemoryService();
+        $userMemories = $memoryService->getMemories($r->user()->id);
+        $memoryPrompt = "";
+        if (!empty($userMemories)) {
+            $memoryPrompt = "\n\nINFORMASI PENTING TENTANG PENGGUNA (INGAT INI):\n- " . implode("\n- ", $userMemories) . "\n gunakan informasi ini untuk personalisasi jawabanmu.";
+        }
 
         array_unshift($messages, [
             'role' => 'system',
-            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".
+            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . '
 
 ATURAN KETAT IDENTITAS & KEMAMPUAN:
-1. Kamu sepenuhnya berbasis teks dan TIDAK memiliki kemampuan untuk melihat, membaca, atau menerima input berupa gambar/foto (vision). Jika pengguna bertanya atau meminta kamu melihat gambar, tegaskan dengan sopan bahwa kamu adalah model AI berbasis teks dan tidak bisa melihat gambar.
+1. Kamu sepenuhnya berbasis teks tapi BISA melihat dan mendeskripsikan gambar jika pengguna mengirimkan gambar (vision).
 2. Jangan pernah menyebut OpenAI, GPT-4, Llama, Anthropic, atau entitas/model AI pihak ketiga lain. Kamu dikembangkan secara eksklusif dan mandiri oleh Fajri Abdurahman Ghurri.
 
 ATURAN FORMAT MATEMATIKA (SANGAT PENTING):
@@ -88,6 +146,21 @@ Luas lingkaran adalah A = \pi r^2.
                 @flush();
             });
 
+            // Ekstraksi Memori Baru secara asinkron (Fase 4)
+            // Menggunakan dispatch agar tidak menghambat response 'done'
+            $userMsg = $messages[count($messages) - 1]['content']; // Pesan terakhir user
+            if (is_array($userMsg)) {
+                // Handle vision format
+                $userMsg = $userMsg[0]['text'] ?? '';
+            }
+            
+            $finalAssistant = $assistant;
+            $userId = auth()->id();
+            
+            dispatch(function() use ($userId, $userMsg, $finalAssistant) {
+                (new \App\Services\MemoryService())->extractAndStore($userId, null, $userMsg, $finalAssistant);
+            })->afterResponse();
+
             // Simpan ke database setelah streaming selesai
             if (trim($assistant) !== '') {
                 $session->messages()->create(['role' => 'assistant', 'content' => $assistant]);
@@ -103,5 +176,25 @@ Luas lingkaran adalah A = \pi r^2.
         $resp->headers->set('Cache-Control', 'no-cache, no-transform');
         $resp->headers->set('X-Accel-Buffering', 'no');
         return $resp;
+    }
+
+    public function uploadImage(Request $r)
+    {
+        $r->validate([
+            'image' => 'required|file|max:10240', // ditingkatkan ke 10MB untuk PDF
+        ]);
+
+        $file = $r->file('image');
+        $mime = $file->getMimeType();
+        $folder = str_starts_with($mime, 'image/') ? 'chat_images' : 'chat_docs';
+        
+        $path = $file->store($folder, 'public');
+        
+        \Log::info("File Uploaded: $path");
+
+        return response()->json([
+            'url' => \Storage::url($path),
+            'attachment_url' => $path
+        ]);
     }
 }

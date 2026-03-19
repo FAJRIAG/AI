@@ -44,6 +44,25 @@ class AiChat
 
         $url = rtrim(config('ai.api_base', 'https://api.groq.com/openai/v1'), '/') . '/chat/completions';
         $model = config('ai.model', 'openai/gpt-oss-120b');
+        
+        // Deteksi apakah ada input gambar di dalam messages
+        $hasImage = false;
+        foreach ($messages as $msg) {
+            if (is_array($msg['content'])) {
+                foreach ($msg['content'] as $part) {
+                    if (isset($part['type']) && $part['type'] === 'image_url') {
+                        $hasImage = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        // Jika terdeteksi gambar, PAKSA alihkan ke model Vision, 
+        // karena model text-only tidak bisa membaca array gambar.
+        if ($hasImage) {
+            $model = config('ai.vision_model', 'llama-3.2-90b-vision-preview'); 
+        }
 
         // Payload memakai gaya "messages" (chat-like)
         $payload = [
@@ -54,6 +73,25 @@ class AiChat
             'frequency_penalty' => 0.05,
             'presence_penalty' => 0.0,
             'stream' => true,
+            'tools' => [
+                [
+                    'type' => 'function',
+                    'function' => [
+                        'name' => 'search_web',
+                        'description' => 'Cari informasi terkini dari internet. Gunakan fungsi ini untuk mencari hal-hal baru, harga saham terkini, cuaca, atau informasi aktual yang tidak ada di memori Anda.',
+                        'parameters' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'query' => [
+                                    'type' => 'string',
+                                    'description' => 'Kata kunci untuk dicari di Google/DuckDuckGo, contoh: "Harga Emas Hari Ini"'
+                                ]
+                            ],
+                            'required' => ['query']
+                        ]
+                    ]
+                ]
+            ]
         ];
 
         $keyManager = new AiKeyManager();
@@ -100,17 +138,18 @@ class AiChat
                     return;
                 }
 
-                // Handle server timeout (504) or overload (503) explicitly
+                // Handle server timeout (504) or overload (503)
                 if ($errorStatus === 504 || $errorStatus === 503) {
-                    $onToken("\n\n(⚠️ Server AI sedang sibuk atau mengalami timeout (Error $errorStatus). Silakan coba lagi nanti.)");
-                    return;
-                }
-
-                // Handle specific API errors in JSON
-                $errObj = json_decode($errorBody, true);
-                if (isset($errObj['detail'])) {
-                    $onToken("\n\n(⚠️ " . $errObj['detail'] . ")");
-                    return;
+                    // Jangan langsung menyerah, rotasi key dan coba lagi
+                    Log::warning("AI Server busy ($errorStatus). Rotating key and retrying...");
+                    usleep(500000); // Tunggu 0.5s
+                } else {
+                    // Handle specific API errors in JSON
+                    $errObj = json_decode($errorBody, true);
+                    if (isset($errObj['detail'])) {
+                        $onToken("\n\n(⚠️ " . $errObj['detail'] . ")");
+                        return;
+                    }
                 }
 
                 $keyManager->rotateKey();
@@ -156,6 +195,8 @@ class AiChat
 
             $body = $resp->toPsrResponse()->getBody();
             $buffer = '';
+            $toolCallsBuffer = [];
+            $fullContent = '';
 
             while (!$body->eof()) {
                 $chunk = $body->read(8192);
@@ -185,10 +226,33 @@ class AiChat
                     if (!is_array($obj))
                         continue;
 
+                    $delta = $obj['choices'][0]['delta'] ?? [];
+
                     // Standard OpenAI/Groq streaming format: choices[0].delta.content
-                    $delta = $obj['choices'][0]['delta']['content'] ?? '';
-                    if ($delta !== '') {
-                        $onToken($delta);
+                    if (isset($delta['content']) && $delta['content'] !== '') {
+                        $contentPiece = $delta['content'];
+                        $fullContent .= $contentPiece;
+                        $onToken($contentPiece);
+                    }
+
+                    // Penangkapan Tool Calls
+                    if (isset($delta['tool_calls'])) {
+                        foreach ($delta['tool_calls'] as $tc) {
+                            $idx = $tc['index'];
+                            if (!isset($toolCallsBuffer[$idx])) {
+                                $toolCallsBuffer[$idx] = [
+                                    'id' => $tc['id'] ?? '',
+                                    'type' => 'function',
+                                    'function' => [
+                                        'name' => $tc['function']['name'] ?? '',
+                                        'arguments' => ''
+                                    ]
+                                ];
+                            }
+                            if (isset($tc['function']['arguments'])) {
+                                $toolCallsBuffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
+                            }
+                        }
                     }
 
                     if (isset($obj['error'])) {
@@ -197,6 +261,48 @@ class AiChat
                         break 2;
                     }
                 }
+            } // end while
+
+            // FALLBACK FOR TEXT-BASED TOOL CALLS (OpenClaw / LiteLLM custom proxy format)
+            if (empty($toolCallsBuffer) && preg_match('/search_web.*?(\{.*?\})/is', $fullContent, $matches)) {
+                // Ensure the extracted JSON is valid
+                $toolJson = $matches[1];
+                if (json_decode($toolJson, true)) {
+                    $toolCallsBuffer[] = [
+                        'id' => 'call_' . substr(md5(uniqid()), 0, 8),
+                        'type' => 'function',
+                        'function' => [
+                            'name' => 'search_web',
+                            'arguments' => $toolJson
+                        ]
+                    ];
+                }
+            }
+
+            if (!empty($toolCallsBuffer)) {
+                $onToken("\n\n[HIDE_TOOL_CALL]\n*(Sedang mencari informasi di internet...)*\n\n");
+                $messages[] = [
+                    'role' => 'assistant',
+                    'content' => $fullContent, // Simpan histori pesan AI sebelum tool call
+                    'tool_calls' => array_values($toolCallsBuffer)
+                ];
+
+                foreach ($toolCallsBuffer as $tc) {
+                    if ($tc['function']['name'] === 'search_web') {
+                        $args = json_decode($tc['function']['arguments'], true);
+                        $query = $args['query'] ?? '';
+                        $result = \App\Services\WebSearchEngine::search($query);
+                        
+                        $messages[] = [
+                            'role' => 'tool',
+                            'tool_call_id' => $tc['id'],
+                            'content' => $result
+                        ];
+                    }
+                }
+
+                // Teruskan array messages baru yang berisi referensi tool result kembali ke AI
+                $this->streamOpenAIResponses($messages, $onToken);
             }
         } catch (\Exception $e) {
             Log::error("AI Chat Exception: " . $e->getMessage());
