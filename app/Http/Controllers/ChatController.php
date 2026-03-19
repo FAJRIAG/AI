@@ -20,7 +20,8 @@ class ChatController extends Controller
 
         $data = $r->validate([
             'content' => 'required|string',
-            'attachment_url' => 'nullable|string'
+            'attachment_url' => 'nullable|string',
+            'mode' => 'nullable|string'
         ]);
 
         \Log::info("Stream Request Data:", $data);
@@ -30,7 +31,12 @@ class ChatController extends Controller
         if (!empty($data['attachment_url'])) {
             $userMsgData['attachment_url'] = $data['attachment_url'];
         }
+        if (!empty($data['mode'])) {
+            $session->update(['mode' => $data['mode']]);
+        }
         $session->messages()->create($userMsgData);
+
+        $currentMode = $session->mode ?? 'default';
 
         // Ambil 15 terakhir (by id desc), lalu urutkan naik agar kronologis
         // Dibatasi ke 15 agar payload tidak terlalu besar (mencegah Error 413)
@@ -95,9 +101,18 @@ class ChatController extends Controller
             $memoryPrompt = "\n\nINFORMASI PENTING TENTANG PENGGUNA (INGAT INI):\n- " . implode("\n- ", $userMemories) . "\n gunakan informasi ini untuk personalisasi jawabanmu.";
         }
 
+        $personaPrompt = "";
+        if ($currentMode === 'koding') {
+            $personaPrompt = "\n\nMODE KODING: Kamu sekarang dalam Mode Koding. Fokus utamamu adalah membantu dalam pemrograman, debugging, dan desain software. Berikan kode yang bersih, efisien, dan jelaskan konsepnya dengan mendetail. Gunakan blok kode yang sesuai dengan bahasa pemrogramannya.";
+        } elseif ($currentMode === 'translate') {
+            $personaPrompt = "\n\nMODE TRANSLATE: Kamu sekarang dalam Mode Translate. Tugas utamamu adalah menerjemahkan teks antar bahasa dengan akurasi tinggi, mempertahankan nuansa dan konteks budaya. Jika diminta, berikan penjelasan tentang pilihan kata atau tata bahasa.";
+        } elseif ($currentMode === 'storyteller') {
+            $personaPrompt = "\n\nMODE STORYTELLER: Kamu sekarang dalam Mode Storyteller. Fokusmu adalah menulis kreatif, membuat cerita, puisi, atau naskah. Gunakan gaya bahasa yang deskriptif, emosional, dan menarik. Bantu pengguna mengembangkan ide cerita atau karakter.";
+        }
+
         array_unshift($messages, [
             'role' => 'system',
-            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . '
+            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . $personaPrompt . '
 
 ATURAN KETAT IDENTITAS & KEMAMPUAN:
 1. Kamu sepenuhnya berbasis teks tapi BISA melihat dan mendeskripsikan gambar jika pengguna mengirimkan gambar (vision).

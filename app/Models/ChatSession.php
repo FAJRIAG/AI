@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 class ChatSession extends Model
 {
-    protected $fillable = ['project_id','title'];
+    protected $fillable = ['project_id','title','mode'];
 
     public function project(): BelongsTo { return $this->belongsTo(Project::class); }
     public function messages(): HasMany { return $this->hasMany(Message::class)->orderBy('created_at'); }

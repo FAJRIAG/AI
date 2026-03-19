@@ -36,6 +36,8 @@ if (!window.__VIP_CHAT_INIT__) {
     // ===== Theme toggle dihapus (Dark Only) =====
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const searchEl = document.getElementById('chatSearch');
+    const selectedModeInput = document.getElementById('selectedMode');
+    const modeButtons = document.querySelectorAll('.mode-btn');
 
     // DOM Elements Upload & Drag-Drop
     const dropZone = document.getElementById('dropZone');
@@ -296,6 +298,23 @@ if (!window.__VIP_CHAT_INIT__) {
     on(toBottom, 'click', scrollBottom);
     on(promptEl, 'input', () => autoResize(promptEl));
 
+    // ===== Mode Logic =====
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        if (selectedModeInput) selectedModeInput.value = mode;
+        
+        // Update UI
+        modeButtons.forEach(b => {
+          b.classList.remove('bg-emerald-600/20', 'border-emerald-500/50', 'text-emerald-400');
+          b.classList.add('bg-white/5', 'border-white/10', 'text-gray-400', 'hover:bg-white/10');
+        });
+        
+        btn.classList.add('bg-emerald-600/20', 'border-emerald-500/50', 'text-emerald-400');
+        btn.classList.remove('bg-white/5', 'border-white/10', 'text-gray-400', 'hover:bg-white/10');
+      });
+    });
+
     // Filter list
     on(searchEl, 'input', e => {
       const q = (e.target.value || '').toLowerCase();
@@ -445,7 +464,8 @@ if (!window.__VIP_CHAT_INIT__) {
 
       let ai = '';
       try {
-        const payload = { content: content, attachment_url: attachedDbUrl };
+        const mode = selectedModeInput?.value || 'default';
+        const payload = { content: content, attachment_url: attachedDbUrl, mode: mode };
         console.log("Sending payload:", payload);
         
         // Bersihkan UI staging SETELAH payload ditangkap

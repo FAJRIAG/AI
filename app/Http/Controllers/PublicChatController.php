@@ -85,10 +85,13 @@ class PublicChatController extends Controller
 
         $history = $sessions[$sid]['history'] ?? [];
 
+        $currentMode = $sessions[$sid]['mode'] ?? 'default';
+
         return view('public.chat', [
             'sessions' => $list,
             'sid' => $sid,
             'history' => $history,
+            'currentMode' => $currentMode,
         ]);
     }
 
@@ -145,7 +148,8 @@ class PublicChatController extends Controller
     {
         $payload = $r->validate([
             'content' => 'required|string',
-            'attachment_url' => 'nullable|string'
+            'attachment_url' => 'nullable|string',
+            'mode' => 'nullable|string'
         ]);
         $sessions = $this->getSessions($r);
         abort_unless(isset($sessions[$sid]), 404);
@@ -156,7 +160,12 @@ class PublicChatController extends Controller
             $userMsgData['attachment_url'] = $payload['attachment_url'];
         }
         $sessions[$sid]['history'][] = $userMsgData;
+        if (!empty($payload['mode'])) {
+            $sessions[$sid]['mode'] = $payload['mode'];
+        }
         $this->saveSessions($r, $sessions);
+
+        $currentMode = $sessions[$sid]['mode'] ?? 'default';
 
         // siapkan messages (max 15 agar payload tidak 413)
         $hist = array_slice($sessions[$sid]['history'], -15);
@@ -212,10 +221,18 @@ class PublicChatController extends Controller
         if (!empty($userMemories)) {
             $memoryPrompt = "\n\nINFORMASI PENTING TENTANG PENGGUNA (INGAT INI):\n- " . implode("\n- ", $userMemories) . "\n gunakan informasi ini untuk personalisasi jawabanmu.";
         }
+        $personaPrompt = "";
+        if ($currentMode === 'koding') {
+            $personaPrompt = "\n\nMODE KODING: Kamu sekarang dalam Mode Koding. Fokus utamamu adalah membantu dalam pemrograman, debugging, dan desain software. Berikan kode yang bersih, efisien, dan jelaskan konsepnya dengan mendetail. Gunakan blok kode yang sesuai dengan bahasa pemrogramannya.";
+        } elseif ($currentMode === 'translate') {
+            $personaPrompt = "\n\nMODE TRANSLATE: Kamu sekarang dalam Mode Translate. Tugas utamamu adalah menerjemahkan teks antar bahasa dengan akurasi tinggi, mempertahankan nuansa dan konteks budaya. Jika diminta, berikan penjelasan tentang pilihan kata atau tata bahasa.";
+        } elseif ($currentMode === 'storyteller') {
+            $personaPrompt = "\n\nMODE STORYTELLER: Kamu sekarang dalam Mode Storyteller. Fokusmu adalah menulis kreatif, membuat cerita, puisi, atau naskah. Gunakan gaya bahasa yang deskriptif, emosional, dan menarik. Bantu pengguna mengembangkan ide cerita atau karakter.";
+        }
 
         array_unshift($messages, [
             'role' => 'system',
-            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . '
+            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . $personaPrompt . '
 
 ATURAN KETAT IDENTITAS & KEMAMPUAN:
 1. Kamu sepenuhnya berbasis teks tapi BISA melihat dan mendeskripsikan gambar jika pengguna mengirimkan gambar (vision).

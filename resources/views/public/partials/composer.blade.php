@@ -4,6 +4,28 @@
      <span class="text-emerald-400 font-semibold tracking-wide">Lepaskan gambar di sini...</span>
   </div>
   <div class="max-w-3xl mx-auto px-4 py-4 relative">
+    <!-- Mode Selector -->
+    <div id="modeSelector" class="flex flex-wrap gap-2 mb-3">
+        @php
+            $modes = [
+                'default' => ['label' => 'JriGPT', 'icon' => '✨'],
+                'koding' => ['label' => 'Koding', 'icon' => '💻'],
+                'translate' => ['label' => 'Translate', 'icon' => '🌐'],
+                'storyteller' => ['label' => 'Storyteller', 'icon' => '📖'],
+            ];
+            $selectedMode = $currentMode ?? 'default';
+        @endphp
+        @foreach($modes as $key => $m)
+            <button type="button" data-mode="{{ $key }}" 
+                    class="mode-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all 
+                    {{ $selectedMode === $key ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10' }}">
+                <span>{{ $m['icon'] }}</span>
+                <span>{{ $m['label'] }}</span>
+            </button>
+        @endforeach
+        <input type="hidden" id="selectedMode" value="{{ $selectedMode }}">
+    </div>
+
     <!-- Image Preview -->
     <div id="attachmentPreviewContainer" class="hidden mb-3 relative inline-block">
       <img id="attachmentPreviewImg" src="" class="h-20 w-auto rounded-lg border border-white/20 object-cover shadow-lg">

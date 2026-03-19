@@ -50,6 +50,7 @@ class DashboardController extends Controller
             'currentSession' => $currentSession,
             'sessions' => $this->mapSessionsFromProjects($projects), // biar sidebar punya flat list
             'sid' => $currentSession?->id,
+            'currentMode' => $currentSession?->mode ?? 'default',
         ]);
     }
 
