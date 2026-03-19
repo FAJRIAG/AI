@@ -157,13 +157,22 @@ Luas lingkaran adalah A = \pi r^2.
             $finalAssistant = $assistant;
             $userId = auth()->id();
             
-            dispatch(function() use ($userId, $userMsg, $finalAssistant) {
+            dispatch(function() use ($userId, $userMsg, $finalAssistant, $session) {
+                \Log::info("VIP: Dispatch afterResponse started for Session ID: " . $session->id);
                 (new \App\Services\MemoryService())->extractAndStore($userId, null, $userMsg, $finalAssistant);
             })->afterResponse();
 
             // Simpan ke database setelah streaming selesai
             if (trim($assistant) !== '') {
                 $session->messages()->create(['role' => 'assistant', 'content' => $assistant]);
+            }
+
+            // SMART TITLE (Otomatis ganti New Chat - Kirim via SSE agar UI update tanpa refresh)
+            $newTitle = (new \App\Services\ChatTitleService())->generateForVip($session);
+            if ($newTitle) {
+                echo "event: rename\n";
+                echo 'data: ' . json_encode(['title' => $newTitle, 'id' => $session->id], JSON_UNESCAPED_UNICODE) . "\n\n";
+                @ob_flush(); @flush();
             }
 
             echo "event: done\n";

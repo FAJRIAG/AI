@@ -409,6 +409,17 @@ if (!window.__VIP_CHAT_INIT__) {
         }
       });
     }
+    function cleanAiContent(text) {
+      if (!text) return '';
+      if (text.includes('[HIDE_TOOL_CALL]')) {
+        // Hapus blok tool call: { ... } yang diawali atau tidak oleh nama tool
+        // Regex ini lebih agresif jika marker HIDE ada
+        text = text.replace(/(search_web|tool_call_name)?[\s\n]*\{[\s\S]*?\}[\s\n]*/gi, '');
+        // Hapus marker itu sendiri
+        text = text.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
+      }
+      return text;
+    }
 
     async function sendMessage(contentOverride = null) {
       const content = (contentOverride ?? promptEl.value).trim();
@@ -475,13 +486,31 @@ if (!window.__VIP_CHAT_INIT__) {
               if (evt === 'token') {
                 ai += obj.token;
                 
-                // HIDE_TOOL_CALL Filter: Bersihkan block JSON tool calls yg dibocorkan model
-                if (ai.includes('[HIDE_TOOL_CALL]')) {
-                    ai = ai.replace(/tool_call_name[\s\S]*?\{[\s\S]*?\}/gi, '');
-                    ai = ai.replace(/\[HIDE\w*_TOOL_CALL\]/g, ''); // bersihkan marker
+                let cleanedAi = cleanAiContent(ai);
+                
+                // Extra fallback for tool calls
+                if (cleanedAi.includes('[HIDE_TOOL_CALL]')) {
+                    cleanedAi = cleanedAi.replace(/tool_call_name[\s\S]*?\{[\s\S]*?\}/gi, '');
+                    cleanedAi = cleanedAi.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
                 }
                 
-                renderAI(hideIncompleteMath(ai), true);
+                renderAI(hideIncompleteMath(cleanedAi), true);
+              }
+              if (evt === 'rename') {
+                try {
+                  const newTitle = obj.title;
+                  const id = String(obj.id);
+                  // Update sidebar
+                  const sidebarLink = document.querySelector(`#sessionList a[href*="session=${id}"]`);
+                  if (sidebarLink) sidebarLink.innerText = newTitle;
+                  // Update active title
+                  if (id === String(SESSION_ID)) {
+                    document.title = `${newTitle} - JriGPT`;
+                  }
+                  // Update rename button metadata
+                  const renameBtn = document.querySelector(`#sessionList [data-rename][data-url*="/sessions/${id}"]`);
+                  if (renameBtn) renameBtn.setAttribute('data-title', newTitle);
+                } catch (e) { }
               }
               if (evt === 'error') { renderAI('(Gagal menghubungi model. Periksa API key atau jaringan.)'); }
             } catch (e) { }
@@ -490,7 +519,7 @@ if (!window.__VIP_CHAT_INIT__) {
       } catch (e) {
         if (e.name !== 'AbortError') { renderAI('(Gagal menghubungi model. Periksa API key atau jaringan.)'); console.error(e); }
       } finally {
-        if (ai) renderAI(ai, true);
+        if (ai) renderAI(cleanAiContent(ai), true);
         typingEl?.classList.add('hidden');
         sendBtn?.classList.remove('opacity-60', 'pointer-events-none');
         stopBtn?.classList.add('hidden');

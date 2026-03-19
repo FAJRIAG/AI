@@ -408,81 +408,112 @@ else {
     });
   }
 
-  // ===== Streaming =====
-  async function sendMessage(contentOverride = null) {
-    const content = (contentOverride ?? promptEl.value).trim();
-    if ((!content && !currentAttachmentUrl) || controller || isUploading) return;
-
-    lastUserMsg = content; 
-    promptEl.value = ''; 
-    autoResize(promptEl); 
-    const attachedDbUrl = currentAttachmentUrl;
-    const attachedPreviewSrc = attachmentPreviewImg.src;
-    
-    renderUser(content, attachedDbUrl ? attachedPreviewSrc : null);
-
-    controller = new AbortController();
-    sendBtn?.classList.add('opacity-60', 'pointer-events-none');
-    stopBtn?.classList.remove('hidden');
-    typingEl?.classList.remove('hidden');
-
-    let ai = '';
-    try {
-      const payload = { content: content, attachment_url: attachedDbUrl };
-      // Bersihkan UI staging SETELAH payload ditangkap
-      removeImage(); 
-
-      const resp = await fetch(`${window.location.origin}/public/stream/${encodeURIComponent(SID)}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload), signal: controller.signal
-      });
-      if (!resp.ok || !resp.body) throw new Error('Bad response');
-      const reader = resp.body.getReader(); const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { value, done } = await reader.read(); if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let boundary = buffer.indexOf('\n\n');
-        while (boundary !== -1) {
-          const block = buffer.slice(0, boundary).trim();
-          buffer = buffer.slice(boundary + 2);
-          boundary = buffer.indexOf('\n\n');
-
-          if (!block) continue;
-          const lines = block.split('\n');
-          if (lines.length < 2) continue;
-          const evt = lines[0].replace('event:', '').trim();
-          const data = lines.slice(1).join('\n').replace(/^data:\s*/, '').trim();
-          try {
-            const obj = JSON.parse(data);
-            if (evt === 'token') {
-              ai += obj.token;
-              
-              if (ai.includes('[HIDE_TOOL_CALL]')) {
-                  ai = ai.replace(/tool_call_name[\s\S]*?\{[\s\S]*?\}/gi, '');
-                  ai = ai.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
-              }
-              
-              renderAI(hideIncompleteMath(ai), true);
-            }
-            if (evt === 'error') { renderAI('(Sedang sibuk atau API Error. Cobalah kembali nanti.)'); }
-          } catch (e) { }
-        }
+    function cleanAiContent(text) {
+      if (!text) return '';
+      if (text.includes('[HIDE_TOOL_CALL]')) {
+        // Hapus blok tool call: { ... } yang diawali atau tidak oleh nama tool
+        // Regex ini lebih agresif jika marker HIDE ada
+        text = text.replace(/(search_web|tool_call_name)?[\s\n]*\{[\s\S]*?\}[\s\n]*/gi, '');
+        // Hapus marker itu sendiri
+        text = text.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
       }
-    } catch (e) {
-      // >>> Perubahan: tampilkan pesan limit non-VIP saat gagal
-      if (e.name !== 'AbortError') {
-        renderAI('(Batas harian non-VIP untuk IP ini telah tercapai. Login VIP untuk akses tanpa batas.)');
-      }
-    } finally {
-      if (ai) renderAI(ai, true);
-      typingEl?.classList.add('hidden');
-      sendBtn?.classList.remove('opacity-60', 'pointer-events-none');
-      stopBtn?.classList.add('hidden');
-      if (chatList.lastChild) chatList.lastChild.classList.remove('streaming');
-      controller = null;
+      return text;
     }
-  }
+
+    // ===== Streaming =====
+    async function sendMessage(contentOverride = null) {
+      const content = (contentOverride ?? promptEl.value).trim();
+      if ((!content && !currentAttachmentUrl) || controller || isUploading) return;
+
+      lastUserMsg = content; 
+      promptEl.value = ''; 
+      autoResize(promptEl); 
+      const attachedDbUrl = currentAttachmentUrl;
+      const attachedPreviewSrc = attachmentPreviewImg.src;
+      
+      renderUser(content, attachedDbUrl ? attachedPreviewSrc : null);
+
+      controller = new AbortController();
+      sendBtn?.classList.add('opacity-60', 'pointer-events-none');
+      stopBtn?.classList.remove('hidden');
+      typingEl?.classList.remove('hidden');
+
+      let ai = '';
+      try {
+        const payload = { content: content, attachment_url: attachedDbUrl };
+        // Bersihkan UI staging SETELAH payload ditangkap
+        removeImage(); 
+
+        const resp = await fetch(`${window.location.origin}/public/stream/${encodeURIComponent(SID)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(payload), signal: controller.signal
+        });
+        if (!resp.ok || !resp.body) throw new Error('Bad response');
+        const reader = resp.body.getReader(); const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { value, done } = await reader.read(); if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let boundary = buffer.indexOf('\n\n');
+          while (boundary !== -1) {
+            const block = buffer.slice(0, boundary).trim();
+            buffer = buffer.slice(boundary + 2);
+            boundary = buffer.indexOf('\n\n');
+
+            if (!block) continue;
+            const lines = block.split('\n');
+            if (lines.length < 2) continue;
+            const evt = lines[0].replace('event:', '').trim();
+            const data = lines.slice(1).join('\n').replace(/^data:\s*/, '').trim();
+            try {
+              const obj = JSON.parse(data);
+              if (evt === 'token') {
+                ai += obj.token;
+                
+                let cleanedAi = cleanAiContent(ai);
+                
+                // HIDE_TOOL_CALL Filter: Bersihkan block JSON tool calls yg dibocorkan model
+                if (cleanedAi.includes('[HIDE_TOOL_CALL]')) {
+                    cleanedAi = cleanedAi.replace(/tool_call_name[\s\S]*?\{[\s\S]*?\}/gi, '');
+                    cleanedAi = cleanedAi.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
+                }
+                
+                renderAI(hideIncompleteMath(cleanedAi), true);
+              }
+              if (evt === 'rename') {
+                try {
+                  const newTitle = obj.title;
+                  const sid = obj.sid;
+                  // Update sidebar
+                  const sidebarLink = document.querySelector(`#sessionList a[href*="sid=${sid}"]`);
+                  if (sidebarLink) sidebarLink.innerText = newTitle;
+                  // Update active title
+                  if (sid === SID) {
+                    document.title = `${newTitle} - JriGPT`;
+                  }
+                  // Update rename modal data-title
+                  const renameBtn = document.querySelector(`#sessionList [data-rename][data-sid="${sid}"]`);
+                  if (renameBtn) renameBtn.setAttribute('data-title', newTitle);
+                } catch (e) { }
+              }
+              if (evt === 'error') { renderAI('(Sedang sibuk atau API Error. Cobalah kembali nanti.)'); }
+            } catch (e) { }
+          }
+        }
+      } catch (e) {
+        // >>> Perubahan: tampilkan pesan limit non-VIP saat gagal
+        if (e.name !== 'AbortError') {
+          renderAI('(Batas harian non-VIP untuk IP ini telah tercapai. Login VIP untuk akses tanpa batas.)');
+        }
+      } finally {
+        if (ai) renderAI(cleanAiContent(ai), true);
+        typingEl?.classList.add('hidden');
+        sendBtn?.classList.remove('opacity-60', 'pointer-events-none');
+        stopBtn?.classList.add('hidden');
+        if (chatList.lastChild) chatList.lastChild.classList.remove('streaming');
+        controller = null;
+      }
+    }
   on(sendBtn, 'click', () => sendMessage());
   on(stopBtn, 'click', () => { if (controller) { controller.abort(); } });
   on(regenBtn, 'click', () => { if (lastUserMsg) sendMessage(lastUserMsg); });

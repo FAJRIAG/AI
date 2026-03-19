@@ -197,6 +197,9 @@ class AiChat
             $buffer = '';
             $toolCallsBuffer = [];
             $fullContent = '';
+            
+            $potentialToolBuffer = '';
+            $isBuffering = false;
 
             while (!$body->eof()) {
                 $chunk = $body->read(8192);
@@ -232,11 +235,28 @@ class AiChat
                     if (isset($delta['content']) && $delta['content'] !== '') {
                         $contentPiece = $delta['content'];
                         $fullContent .= $contentPiece;
-                        $onToken($contentPiece);
+                        
+                        // Start buffering if we see "search_web" or an opening brace which might be a JSON tool call
+                        if (!$isBuffering && (strpos($contentPiece, 'search_web') !== false || strpos($contentPiece, '{') !== false)) {
+                            $isBuffering = true;
+                        }
+
+                        if ($isBuffering) {
+                            $potentialToolBuffer .= $contentPiece;
+                            // Safety: if buffer gets too large, it's probably not a tool call, stop buffering
+                            if (strlen($potentialToolBuffer) > 2000) {
+                                $onToken($potentialToolBuffer);
+                                $potentialToolBuffer = '';
+                                $isBuffering = false;
+                            }
+                        } else {
+                            $onToken($contentPiece);
+                        }
                     }
 
-                    // Penangkapan Tool Calls
+                    // Penangkapan Tool Calls (Standard format)
                     if (isset($delta['tool_calls'])) {
+                        $isBuffering = true; // Still buffering tool call parts
                         foreach ($delta['tool_calls'] as $tc) {
                             $idx = $tc['index'];
                             if (!isset($toolCallsBuffer[$idx])) {
@@ -264,10 +284,12 @@ class AiChat
             } // end while
 
             // FALLBACK FOR TEXT-BASED TOOL CALLS (OpenClaw / LiteLLM custom proxy format)
+            $isFallbackTool = false;
             if (empty($toolCallsBuffer) && preg_match('/search_web.*?(\{.*?\})/is', $fullContent, $matches)) {
                 // Ensure the extracted JSON is valid
                 $toolJson = $matches[1];
                 if (json_decode($toolJson, true)) {
+                    $isFallbackTool = true;
                     $toolCallsBuffer[] = [
                         'id' => 'call_' . substr(md5(uniqid()), 0, 8),
                         'type' => 'function',
@@ -279,8 +301,11 @@ class AiChat
                 }
             }
 
+            // Decide what to do with the buffered text
             if (!empty($toolCallsBuffer)) {
-                $onToken("\n\n[HIDE_TOOL_CALL]\n*(Sedang mencari informasi di internet...)*\n\n");
+                // It was a tool call! Discard potentialToolBuffer (preventing flicker)
+                $potentialToolBuffer = ''; 
+                $onToken("\n\n[HIDE_TOOL_CALL]\n🔍 *(Sedang mencari informasi di internet...)* ⏳\n\n");
                 $messages[] = [
                     'role' => 'assistant',
                     'content' => $fullContent, // Simpan histori pesan AI sebelum tool call
@@ -303,6 +328,12 @@ class AiChat
 
                 // Teruskan array messages baru yang berisi referensi tool result kembali ke AI
                 $this->streamOpenAIResponses($messages, $onToken);
+            } else {
+                // Not a tool call after all, release the buffer to the user
+                if ($potentialToolBuffer !== '') {
+                    $onToken($potentialToolBuffer);
+                    $potentialToolBuffer = '';
+                }
             }
         } catch (\Exception $e) {
             Log::error("AI Chat Exception: " . $e->getMessage());

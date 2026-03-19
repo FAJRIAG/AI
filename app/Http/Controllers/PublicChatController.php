@@ -270,6 +270,7 @@ Luas lingkaran adalah A = \pi r^2.
             $currentSid = $sid;
 
             dispatch(function() use ($currentSid, $userMsg, $finalAssistant) {
+                \Log::info("Public: Dispatch afterResponse started for SID: $currentSid");
                 (new \App\Services\MemoryService())->extractAndStore(null, $currentSid, $userMsg, $finalAssistant);
             })->afterResponse();
 
@@ -280,6 +281,17 @@ Luas lingkaran adalah A = \pi r^2.
                     $sessions[$sid]['history'][] = ['role' => 'assistant', 'content' => $assistant];
                     $r->session()->put('pub_sessions', $sessions);
                     $r->session()->save(); // ← PENTING: paksa simpan dalam StreamedResponse
+                }
+            }
+
+            // SMART TITLE (Otomatis ganti New Chat - Kirim via SSE agar UI update tanpa refresh)
+            $sessions = $r->session()->get('pub_sessions', []);
+            if (isset($sessions[$sid])) {
+                $newTitle = (new \App\Services\ChatTitleService())->generateForPublic($sid, $sessions[$sid]['history']);
+                if ($newTitle) {
+                    echo "event: rename\n";
+                    echo 'data: ' . json_encode(['title' => $newTitle, 'sid' => $sid], JSON_UNESCAPED_UNICODE) . "\n\n";
+                    @ob_flush(); @flush();
                 }
             }
 
