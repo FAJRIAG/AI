@@ -21,10 +21,15 @@ class BrowserService
             
             $response = Http::withHeaders([
                 'X-Return-Format' => 'markdown',
-            ])->timeout(45)->get($readerUrl);
+            ])->timeout(30)->get($readerUrl);
 
             if ($response->successful()) {
                 $content = $response->body();
+                
+                // Cek apakah ada indikasi bot block (999 LinkedIn, dsb)
+                if (str_contains($content, 'error 999') || str_contains($content, 'CAPTCHA') || str_contains($content, 'Access Denied')) {
+                    return "--- INFO DARI $url ---\n\nMaaf, situs ini ($url) memproteksi akses otomatis. Saya tidak bisa membaca detail isinya secara langsung. Mohon andalkan ringkasan dari hasil pencarian umum saja.";
+                }
                 // Potong jika terlalu panjang
                 if (strlen($content) > 15000) {
                     $content = mb_substr($content, 0, 15000) . "\n\n...(Konten dipotong agar tidak kepenuhan)...";

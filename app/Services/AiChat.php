@@ -366,6 +366,10 @@ class AiChat
                 if ($lastStatus !== $statusMsg) {
                     $onToken("\n\n[HIDE_TOOL_CALL]\n$statusMsg\n\n");
                     $lastStatus = $statusMsg;
+                    
+                    // PAKSA FLUSH agar user langsung melihat status "Sedang..."
+                    if (function_exists('ob_flush') && ob_get_level() > 0) @ob_flush();
+                    @flush();
                 }
                 $messages[] = [
                     'role' => 'assistant',
