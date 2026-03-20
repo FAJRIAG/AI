@@ -713,7 +713,7 @@ else {
     document.querySelectorAll('.ai-raw-content').forEach(el => {
       const article = el.nextElementSibling;
       if (article) {
-        article.innerHTML = md(el.textContent);
+        article.innerHTML = md(cleanAiContent(el.textContent));
         renderMath(article);
       }
     });
