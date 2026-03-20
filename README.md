@@ -18,6 +18,9 @@ JriGPT sekarang memiliki "perasaan". UI dan gaya bicara AI akan berubah secara o
 ### 🧠 Intelligent Memory
 JriGPT mampu mengekstrak dan mengingat fakta penting tentang Anda (nama, hobi, preferensi teknis) secara otomatis untuk memberikan jawaban yang dipersonalisasi di masa depan.
 
+### 🌐 Web-Agent (Browser Control)
+JriGPT tidak hanya memberikan ringkasan pencarian, tapi bisa bener-bener "mengunjungi" website spesifik, membaca isinya, dan menarik data detail (seperti harga barang, stok, atau isi berita lengkap) layaknya asisten manusia yang sedang browsing.
+
 ### 👁️ Multimodal Vision
 Kirimkan gambar, dan JriGPT dapat melihat, menganalisis, serta mendeskripsikan isi gambar tersebut dengan detail.
 

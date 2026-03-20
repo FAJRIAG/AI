@@ -37,6 +37,19 @@ class AiChat
             }
         }
 
+        // TAMBAHKAN INSTRUKSI WEB AGENT KE SYSTEM PROMPT
+        $agenticPrompt = "\n\nKEMAMPUAN WEB AGENT:
+1. Gunakan `search_web` untuk mencari informasi umum atau menemukan URL yang relevan.
+2. Gunakan `browse_url` untuk mengunjungi URL spesifik guna membaca isi lengkap halaman tersebut. Ini sangat berguna jika informasi yang Anda butuhkan (seperti harga detail, stok, atau isi berita lengkap) tidak ada di ringkasan hasil pencarian.
+3. Anda bisa melakukan beberapa kali pencarian atau kunjungan halaman secara berurutan untuk menyelesaikan tugas yang kompleks.";
+
+        foreach ($messages as &$msg) {
+            if ($msg['role'] === 'system') {
+                $msg['content'] .= $agenticPrompt;
+                break;
+            }
+        }
+
         $provider = strtolower(config('ai.provider', 'groq'));
         // Saat ini kamu pakai OpenAI — panggil Responses API:
         if ($provider === 'groq' || $provider === 'openai' || $provider === 'jrigpt') {
@@ -105,6 +118,23 @@ class AiChat
                                 ]
                             ],
                             'required' => ['query']
+                        ]
+                    ]
+                ],
+                [
+                    'type' => 'function',
+                    'function' => [
+                        'name' => 'browse_url',
+                        'description' => 'Kunjungi URL spesifik untuk membaca isi lengkap halamannya dalam format Markdown. Gunakan ini setelah `search_web` jika Anda perlu detail lebih mendalam dari suatu situs.',
+                        'parameters' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'url' => [
+                                    'type' => 'string',
+                                    'description' => 'URL lengkap situs yang ingin dikunjungi (termasuk https://)'
+                                ]
+                            ],
+                            'required' => ['url']
                         ]
                     ]
                 ]
@@ -325,7 +355,7 @@ class AiChat
                 $onToken("\n\n[HIDE_TOOL_CALL]\n🔍 *(Sedang mencari informasi di internet...)* ⏳\n\n");
                 $messages[] = [
                     'role' => 'assistant',
-                    'content' => $fullContent, // Simpan histori pesan AI sebelum tool call
+                    'content' => $fullContent ?: '🔍 *(Menjalankan pencarian...)*', // Hindari error "Message content cannot be empty"
                     'tool_calls' => array_values($toolCallsBuffer)
                 ];
 
@@ -334,6 +364,16 @@ class AiChat
                         $args = json_decode($tc['function']['arguments'], true);
                         $query = $args['query'] ?? '';
                         $result = \App\Services\WebSearchEngine::search($query);
+                        
+                        $messages[] = [
+                            'role' => 'tool',
+                            'tool_call_id' => $tc['id'],
+                            'content' => $result
+                        ];
+                    } elseif ($tc['function']['name'] === 'browse_url') {
+                        $args = json_decode($tc['function']['arguments'], true);
+                        $url = $args['url'] ?? '';
+                        $result = \App\Services\BrowserService::browse($url);
                         
                         $messages[] = [
                             'role' => 'tool',

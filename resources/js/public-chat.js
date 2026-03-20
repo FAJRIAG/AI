@@ -549,7 +549,7 @@ else {
       if (text.includes('[HIDE_TOOL_CALL]')) {
         // Hapus blok tool call: { ... } yang diawali atau tidak oleh nama tool
         // Regex ini lebih agresif jika marker HIDE ada
-        text = text.replace(/(search_web|tool_call_name)?[\s\n]*\{[\s\S]*?\}[\s\n]*/gi, '');
+        text = text.replace(/(search_web|browse_url|tool_call_name)?[\s\n]*\{[\s\S]*?\}[\s\n]*/gi, '');
         // Hapus marker itu sendiri
         text = text.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
       }
@@ -612,7 +612,7 @@ else {
                 
                 // HIDE_TOOL_CALL Filter: Bersihkan block JSON tool calls yg dibocorkan model
                 if (cleanedAi.includes('[HIDE_TOOL_CALL]')) {
-                    cleanedAi = cleanedAi.replace(/tool_call_name[\s\S]*?\{[\s\S]*?\}/gi, '');
+                    cleanedAi = cleanedAi.replace(/(search_web|browse_url|tool_call_name)[\s\S]*?\{[\s\S]*?\}/gi, '');
                     cleanedAi = cleanedAi.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
                 }
                 
