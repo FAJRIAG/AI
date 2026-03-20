@@ -1,4 +1,4 @@
-# JriGPT - Premium AI Assistant
+# 🚀 JriGPT - Advanced AI Assistant with Web-Agent & Emotional Intelligence
 
 <p align="center">
   <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" width="120" alt="JriGPT Logo">
@@ -8,73 +8,63 @@ JriGPT adalah asisten AI cerdas tingkat lanjut yang dikembangkan secara khusus o
 
 ## ✨ Fitur Unggulan
 
-### 🌈 Emotional Tone Sync (Terbaru!)
-JriGPT sekarang memiliki "perasaan". UI dan gaya bicara AI akan berubah secara otomatis berdasarkan mood pengguna:
-- **Calm (Emerald)**: Suasana santai dan ramah.
-- **Panic (Rose/Red)**: Terdeteksi saat ketikan panik/kapital. AI merespons dengan tenang dan solutif.
-- **Creative (Violet)**: Mode brainstorming dengan ide-ide imajinatif.
-- **Thoughtful (Sky Blue)**: Mode analisis mendalam untuk pertanyaan filosofis atau teknis.
+### 🌐 Web-Agent (Browser Control) - **Powered by Jina Reader**
+JriGPT tidak hanya memberikan ringkasan pencarian yang terbatas. Ia bisa bener-bener "mengunjungi" website spesifik (seperti iBox, Shopee, atau portal berita) menggunakan integrasi **Jina Reader**.
+- **Deep Extraction**: Membaca isi lengkap halaman dalam format Markdown yang bersih.
+- **Bypass Bot**: Mampu menembus proteksi JavaScript dan bot di situs-situs modern (seperti iBox).
+- **Agentic Loops**: Mampu melakukan rantai tindakan (Cari -> Pilih Link -> Baca Detail) secara otomatis.
+
+### 🎭 Emotional Tone Sync (Real-time Sentiment)
+JriGPT memahami perasaan Anda. Antarmuka (UI) JriGPT akan berubah warna secara dinamis, dan nada bicara AI akan menyesuaikan diri berdasarkan cara Anda mengetik:
+- 🔴 **Panic Mode**: UI berubah merah saat Anda mengetik dengan CAPSLOCK atau kata-kata mendesak. JriGPT akan merespons dengan lebih tenang.
+- 🟣 **Creative Mode**: UI berubah ungu saat brainstorming. AI akan menjadi lebih imajinatif.
+- 🔵 **Thoughtful Mode**: UI berubah biru langit untuk analisis mendalam.
+- 🟢 **Calm Mode**: UI hijau emerald standar yang elegan.
 
 ### 🧠 Intelligent Memory
 JriGPT mampu mengekstrak dan mengingat fakta penting tentang Anda (nama, hobi, preferensi teknis) secara otomatis untuk memberikan jawaban yang dipersonalisasi di masa depan.
 
-### 🌐 Web-Agent (Browser Control)
-JriGPT tidak hanya memberikan ringkasan pencarian, tapi bisa bener-bener "mengunjungi" website spesifik, membaca isinya, dan menarik data detail (seperti harga barang, stok, atau isi berita lengkap) layaknya asisten manusia yang sedang browsing.
-
-### 👁️ Multimodal Vision
-Kirimkan gambar, dan JriGPT dapat melihat, menganalisis, serta mendeskripsikan isi gambar tersebut dengan detail.
-
-### 📄 Document Analysis
-Upload file **PDF, TXT,** atau **CSV**. JriGPT akan membaca isinya dan membantu Anda merangkum atau menjawab pertanyaan berdasarkan dokumen tersebut.
-
 ### 🚀 Artifacts UI
 Tampilan layaknya asisten profesional yang dapat merender kode HTML/CSS/JS dan diagram **Mermaid** secara real-time di panel samping.
 
-### 🌐 Real-time Web Search
-Terhubung ke internet untuk mencari informasi terbaru, harga saham, cuaca, atau berita terkini yang tidak ada dalam data pelatihan model.
+### 👁️ Multimodal Vision & Document Analysis
+- **Vision**: Analisis gambar secara mendalam.
+- **Docs**: Upload file **PDF, TXT,** atau **CSV** untuk rangkuman otomatis.
 
----
-
-## 🛠️ Teknologi yang Digunakan
-
+## 🛠️ Stack Teknologi
 - **Backend**: Laravel 12 (PHP 8.2+)
-- **Frontend**: Blade, Vanilla JS, Tailwind CSS
-- **AI Engine**: Groq / OpenAI API via Custom Service
-- **Tools**: Marked.js (Markdown), KaTeX (Math), Mermaid.js (Diagrams), Highlight.js (Syntax Highlighting)
-
----
+- **Frontend**: Blade, Vanilla JS, Tailwind CSS, CSS Variables for Themes
+- **AI Engine**: Groq / OpenAI / JriGPT Private API
+- **Web Reader**: Jina Reader API Integration
+- **Tools**: Marked.js, KaTeX, Mermaid.js, Highlight.js
 
 ## 🚀 Instalasi Cepat
 
-1. **Clone repositori**:
+1. **Clone Repo**
    ```bash
    git clone https://github.com/FAJRIAG/AI.git
    cd AI
    ```
 
-2. **Setup Environment**:
+2. **Setup Env**
    ```bash
    cp .env.example .env
-   # Update AI_API_KEY dan konfigurasi lainnya di .env
+   php artisan key:generate
    ```
 
-3. **Install Dependensi & Jalankan**:
+3. **Install Dependencies**
    ```bash
    composer install
    npm install
-   php artisan key:generate
-   php artisan migrate
    npm run build
    ```
 
-4. **Jalankan Aplikasi**:
+4. **Run Server**
    ```bash
    php artisan serve
-   # Buka http://localhost:8000
    ```
 
 ---
-
 ## 👨‍💻 Dikembangkan Oleh
 **Fajri Abdurahman Ghurri**  
 Asisten AI ini terus dikembangkan untuk menjadi pendamping koding dan produktivitas terbaik Anda.
