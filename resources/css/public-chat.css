@@ -1,6 +1,32 @@
 :root {
   --ring: #2563eb;
   --bg: #0b0f15;
+  
+  /* Emotional Tone Sync Colors */
+  --mood-primary: #10b981; /* Default/Calm (Emerald 500) */
+  --mood-primary-glow: rgba(16, 185, 129, 0.2);
+  --mood-bg-accent: rgba(16, 185, 129, 0.05);
+  
+  transition: --mood-primary 0.5s ease, --mood-primary-glow 0.5s ease;
+}
+
+/* Mood Overrides */
+[data-mood="panic"] {
+  --mood-primary: #f43f5e; /* Panic/Angry (Rose 500) */
+  --mood-primary-glow: rgba(244, 63, 94, 0.3);
+  --mood-bg-accent: rgba(244, 63, 94, 0.1);
+}
+
+[data-mood="creative"] {
+  --mood-primary: #8b5cf6; /* Creative (Violet 500) */
+  --mood-primary-glow: rgba(139, 92, 246, 0.3);
+  --mood-bg-accent: rgba(139, 92, 246, 0.1);
+}
+
+[data-mood="thoughtful"] {
+  --mood-primary: #0ea5e9; /* Thoughtful (Sky 500) */
+  --mood-primary-glow: rgba(14, 165, 233, 0.3);
+  --mood-bg-accent: rgba(14, 165, 233, 0.1);
 }
 
 html,

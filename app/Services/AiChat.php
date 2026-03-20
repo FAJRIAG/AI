@@ -18,8 +18,25 @@ class AiChat
      *
      * $onToken menerima string token setiap kali ada delta baru.
      */
-    public function stream(array $messages, \Closure $onToken): void
+    public function stream(array $messages, \Closure $onToken, string $mood = 'calm'): void
     {
+        // Hubungkan mood ke instruksi nada di system prompt
+        $toneInstruction = \App\Services\SentimentService::getToneInstruction($mood);
+        if (!empty($toneInstruction)) {
+            // Cari pesan system yang ada atau tambahkan di awal
+            $foundSystem = false;
+            foreach ($messages as &$msg) {
+                if ($msg['role'] === 'system') {
+                    $msg['content'] .= "\n\n" . $toneInstruction;
+                    $foundSystem = true;
+                    break;
+                }
+            }
+            if (!$foundSystem) {
+                array_unshift($messages, ['role' => 'system', 'content' => $toneInstruction]);
+            }
+        }
+
         $provider = strtolower(config('ai.provider', 'groq'));
         // Saat ini kamu pakai OpenAI — panggil Responses API:
         if ($provider === 'groq' || $provider === 'openai' || $provider === 'jrigpt') {

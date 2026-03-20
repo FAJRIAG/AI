@@ -193,6 +193,41 @@ else {
       a.click();
     }
   };
+
+  // ===== Mood Manager (Emotional Tone Sync) =====
+  const MoodManager = {
+    currentMood: 'calm',
+    keywords: {
+      panic: ['tolong', 'cepat', 'mati', 'error', 'gagal', 'woi', 'urgent', 'darurat', 'bahaya'],
+      creative: ['buatkan', 'cerita', 'ide', 'saran', 'gambar', 'desain', 'puisi', 'lukis', 'imajinasi'],
+      thoughtful: ['kenapa', 'bagaimana', 'jelaskan', 'mengapa', 'analisis', 'riset', 'mikir', 'logika']
+    },
+    
+    analyze(text) {
+      if (!text || text.length < 3) return 'calm';
+      
+      const lower = text.toLowerCase();
+      
+      // Panic detection (Aggressive)
+      const isAllCaps = text.length > 5 && text === text.toUpperCase() && /[A-Z]/.test(text);
+      const hasPanicKeywords = this.keywords.panic.some(k => lower.includes(k));
+      if (isAllCaps || hasPanicKeywords) return 'panic';
+      
+      // Creative detection
+      if (this.keywords.creative.some(k => lower.includes(k))) return 'creative';
+      
+      // Thoughtful detection
+      if (this.keywords.thoughtful.some(k => lower.includes(k))) return 'thoughtful';
+      
+      return 'calm';
+    },
+
+    updateUI(mood) {
+      if (this.currentMood === mood) return;
+      this.currentMood = mood;
+      document.documentElement.setAttribute('data-mood', mood);
+    }
+  };
   // Utils
   const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
   const qsAll = (s, root = document) => Array.from(root.querySelectorAll(s));
@@ -407,7 +442,11 @@ else {
     toBottom?.classList.toggle('hidden', !farFromBottom); 
   });
   on(toBottom, 'click', scrollBottom);
-  on(promptEl, 'input', () => autoResize(promptEl));
+  on(promptEl, 'input', () => {
+    autoResize(promptEl);
+    const mood = MoodManager.analyze(promptEl.value);
+    MoodManager.updateUI(mood);
+  });
 
   // ===== Mode Logic =====
   modeButtons.forEach(btn => {
@@ -538,7 +577,8 @@ else {
       let ai = '';
       try {
         const mode = selectedModeInput?.value || 'default';
-        const payload = { content: content, attachment_url: attachedDbUrl, mode: mode };
+        const mood = MoodManager.currentMood;
+        const payload = { content: content, attachment_url: attachedDbUrl, mode: mode, mood: mood };
         // Bersihkan UI staging SETELAH payload ditangkap
         removeImage(); 
 

@@ -149,7 +149,8 @@ class PublicChatController extends Controller
         $payload = $r->validate([
             'content' => 'required|string',
             'attachment_url' => 'nullable|string',
-            'mode' => 'nullable|string'
+            'mode' => 'nullable|string',
+            'mood' => 'nullable|string'
         ]);
         $sessions = $this->getSessions($r);
         abort_unless(isset($sessions[$sid]), 404);
@@ -271,6 +272,7 @@ Luas lingkaran adalah A = \pi r^2.
         $resp = new StreamedResponse(function () use ($messages, $sid, $r) {
             $ai = new AiChat();
             $assistant = '';
+            $mood = $payload['mood'] ?? 'calm';
 
             $ai->stream($messages, function ($token) use (&$assistant) {
                 $assistant .= $token;
@@ -278,7 +280,7 @@ Luas lingkaran adalah A = \pi r^2.
                 echo 'data: ' . json_encode(['token' => $token], JSON_UNESCAPED_UNICODE) . "\n\n";
                 @ob_flush();
                 @flush();
-            });
+            }, $mood);
 
             // Ekstraksi Memori Baru secara asinkron (Fase 4)
             $userMsg = $messages[count($messages) - 1]['content'];
