@@ -548,8 +548,9 @@ else {
       if (!text) return '';
       if (text.includes('[HIDE_TOOL_CALL]')) {
         // Hapus blok tool call: { ... } yang diawali atau tidak oleh nama tool
-        // Regex ini lebih agresif jika marker HIDE ada
-        text = text.replace(/(search_web|browse_url|tool_call_name)?[\s\n]*\{[\s\S]*?\}[\s\n]*/gi, '');
+        // Menggunakan regex yang lebih kuat untuk menangkap whitespace/newline di antara nama tool dan {
+        text = text.replace(/(search_web|browse_url|tool_call_name)[\s\n]*\{[\s\S]*?\}/gi, '');
+        text = text.replace(/\{[\s\S]*?"(query|url)"[\s\S]*?\}/gi, ''); // Fallback jika nama tool hilang
         // Hapus marker itu sendiri
         text = text.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
       }

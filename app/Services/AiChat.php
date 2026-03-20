@@ -284,7 +284,8 @@ class AiChat
                         $fullContent .= $contentPiece;
                         
                         // Start buffering if we see "search_web" or an opening brace which might be a JSON tool call
-                        if (!$isBuffering && (strpos($contentPiece, 'search_web') !== false || strpos($contentPiece, '{') !== false)) {
+                        // Start buffering if we see a tool name or an opening brace
+                        if (!$isBuffering && (strpos($contentPiece, 'search_web') !== false || strpos($contentPiece, 'browse_url') !== false || strpos($contentPiece, '{') !== false)) {
                             $isBuffering = true;
                         }
 
@@ -332,16 +333,17 @@ class AiChat
 
             // FALLBACK FOR TEXT-BASED TOOL CALLS (OpenClaw / LiteLLM custom proxy format)
             $isFallbackTool = false;
-            if (empty($toolCallsBuffer) && preg_match('/search_web.*?(\{.*?\})/is', $fullContent, $matches)) {
+            if (empty($toolCallsBuffer) && preg_match('/(search_web|browse_url).*?(\{.*?\})/is', $fullContent, $matches)) {
                 // Ensure the extracted JSON is valid
-                $toolJson = $matches[1];
+                $toolJson = $matches[2];
+                $toolName = $matches[1];
                 if (json_decode($toolJson, true)) {
                     $isFallbackTool = true;
                     $toolCallsBuffer[] = [
                         'id' => 'call_' . substr(md5(uniqid()), 0, 8),
                         'type' => 'function',
                         'function' => [
-                            'name' => 'search_web',
+                            'name' => $toolName,
                             'arguments' => $toolJson
                         ]
                     ];
@@ -352,7 +354,14 @@ class AiChat
             if (!empty($toolCallsBuffer)) {
                 // It was a tool call! Discard potentialToolBuffer (preventing flicker)
                 $potentialToolBuffer = ''; 
-                $onToken("\n\n[HIDE_TOOL_CALL]\n🔍 *(Sedang mencari informasi di internet...)* ⏳\n\n");
+                
+                // Berikan feedback visual yang tepat berdasarkan tool pertama
+                $firstTool = $toolCallsBuffer[0]['function']['name'] ?? 'tool';
+                $statusMsg = ($firstTool === 'search_web') 
+                    ? "🔍 *(Sedang mencari informasi di internet...)* ⏳" 
+                    : "🌐 *(Sedang mengunjungi website...)* ⏳";
+
+                $onToken("\n\n[HIDE_TOOL_CALL]\n$statusMsg\n\n");
                 $messages[] = [
                     'role' => 'assistant',
                     'content' => $fullContent ?: '🔍 *(Menjalankan pencarian...)*', // Hindari error "Message content cannot be empty"
@@ -375,6 +384,8 @@ class AiChat
                         $url = $args['url'] ?? '';
                         $result = \App\Services\BrowserService::browse($url);
                         
+                        Log::info("Tool Result (" . $tc['function']['name'] . "): " . mb_strimwidth($result, 0, 500));
+                        
                         $messages[] = [
                             'role' => 'tool',
                             'tool_call_id' => $tc['id'],
@@ -383,6 +394,7 @@ class AiChat
                     }
                 }
 
+                Log::info("Recursive stream starting. Messages count: " . count($messages));
                 // Teruskan array messages baru yang berisi referensi tool result kembali ke AI
                 $this->streamOpenAIResponses($messages, $onToken);
             } else {

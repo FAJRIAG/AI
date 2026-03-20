@@ -15,18 +15,33 @@ class BrowserService
     public static function browse(string $url): string
     {
         try {
-            // Gunakan User-Agent yang umum agar tidak diblokir
+            // Gunakan Jina Reader (https://r.jina.ai/) untuk hasil Markdown yang "Premium"
+            // Jina Reader menangani JavaScript rendering dan bypass banyak bot protection.
+            $readerUrl = 'https://r.jina.ai/' . $url;
+            
             $response = Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            ])->timeout(30)->get($url);
+                'X-Return-Format' => 'markdown',
+            ])->timeout(45)->get($readerUrl);
 
-            if (!$response->successful()) {
-                return "Gagal mengakses URL: Server merespons dengan status {$response->status()}.";
+            if ($response->successful()) {
+                $content = $response->body();
+                // Potong jika terlalu panjang
+                if (strlen($content) > 15000) {
+                    $content = mb_substr($content, 0, 15000) . "\n\n...(Konten dipotong agar tidak kepenuhan)...";
+                }
+                return "--- ISI HALAMAN DARI $url ---\n\n" . $content . "\n\n--- AKHIR HALAMAN ---";
             }
 
-            $html = $response->body();
-            return self::cleanHtmlToMarkdown($html, $url);
+            // Fallback: Jika Jina gagal, coba akses langsung (Simple Scraping)
+            $directResponse = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+            ])->timeout(20)->get($url);
+
+            if ($directResponse->successful()) {
+                return self::cleanHtmlToMarkdown($directResponse->body(), $url);
+            }
+
+            return "Gagal mengakses URL: Server merespons dengan status {$response->status()}.";
 
         } catch (\Exception $e) {
             Log::error("BrowserService Error ($url): " . $e->getMessage());
