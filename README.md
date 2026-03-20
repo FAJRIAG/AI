@@ -1,61 +1,80 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# JriGPT - Premium AI Assistant
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" width="120" alt="JriGPT Logo">
 </p>
 
-## About Laravel
+JriGPT adalah asisten AI cerdas tingkat lanjut yang dikembangkan secara khusus oleh **Fajri Abdurahman Ghurri**. Platform ini dibangun menggunakan Laravel 12 dan ditenagai oleh model bahasa besar terbaru untuk memberikan pengalaman asisten yang personal, responsif, dan kaya fitur.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ✨ Fitur Unggulan
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🌈 Emotional Tone Sync (Terbaru!)
+JriGPT sekarang memiliki "perasaan". UI dan gaya bicara AI akan berubah secara otomatis berdasarkan mood pengguna:
+- **Calm (Emerald)**: Suasana santai dan ramah.
+- **Panic (Rose/Red)**: Terdeteksi saat ketikan panik/kapital. AI merespons dengan tenang dan solutif.
+- **Creative (Violet)**: Mode brainstorming dengan ide-ide imajinatif.
+- **Thoughtful (Sky Blue)**: Mode analisis mendalam untuk pertanyaan filosofis atau teknis.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🧠 Intelligent Memory
+JriGPT mampu mengekstrak dan mengingat fakta penting tentang Anda (nama, hobi, preferensi teknis) secara otomatis untuk memberikan jawaban yang dipersonalisasi di masa depan.
 
-## Learning Laravel
+### 👁️ Multimodal Vision
+Kirimkan gambar, dan JriGPT dapat melihat, menganalisis, serta mendeskripsikan isi gambar tersebut dengan detail.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 📄 Document Analysis
+Upload file **PDF, TXT,** atau **CSV**. JriGPT akan membaca isinya dan membantu Anda merangkum atau menjawab pertanyaan berdasarkan dokumen tersebut.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 🚀 Artifacts UI
+Tampilan layaknya asisten profesional yang dapat merender kode HTML/CSS/JS dan diagram **Mermaid** secara real-time di panel samping.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🌐 Real-time Web Search
+Terhubung ke internet untuk mencari informasi terbaru, harga saham, cuaca, atau berita terkini yang tidak ada dalam data pelatihan model.
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🛠️ Teknologi yang Digunakan
 
-### Premium Partners
+- **Backend**: Laravel 12 (PHP 8.2+)
+- **Frontend**: Blade, Vanilla JS, Tailwind CSS
+- **AI Engine**: Groq / OpenAI API via Custom Service
+- **Tools**: Marked.js (Markdown), KaTeX (Math), Mermaid.js (Diagrams), Highlight.js (Syntax Highlighting)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## 🚀 Instalasi Cepat
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. **Clone repositori**:
+   ```bash
+   git clone https://github.com/FAJRIAG/AI.git
+   cd AI
+   ```
 
-## Code of Conduct
+2. **Setup Environment**:
+   ```bash
+   cp .env.example .env
+   # Update AI_API_KEY dan konfigurasi lainnya di .env
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+3. **Install Dependensi & Jalankan**:
+   ```bash
+   composer install
+   npm install
+   php artisan key:generate
+   php artisan migrate
+   npm run build
+   ```
 
-## Security Vulnerabilities
+4. **Jalankan Aplikasi**:
+   ```bash
+   php artisan serve
+   # Buka http://localhost:8000
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## 👨‍💻 Dikembangkan Oleh
+**Fajri Abdurahman Ghurri**  
+Asisten AI ini terus dikembangkan untuk menjadi pendamping koding dan produktivitas terbaik Anda.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+© 2026 JriGPT. All Rights Reserved.
