@@ -58,7 +58,8 @@ class AiChat
         }
 
         // Fallback: tetap pakai OpenAI Responses
-        $this->streamOpenAIResponses($messages, $onToken);
+        $lastStatus = '';
+        $this->streamOpenAIResponses($messages, $onToken, $lastStatus);
     }
 
     /**
@@ -66,7 +67,7 @@ class AiChat
      * Endpoint: POST https://api.groq.com/openai/v1/chat/completions
      * Payload: { model, messages|input, stream: true }
      */
-    private function streamOpenAIResponses(array $messages, \Closure $onToken): void
+    private function streamOpenAIResponses(array $messages, \Closure $onToken, string &$lastStatus = ''): void
     {
         // Prevent PHP execution timeout for long generations
         @set_time_limit(0);
@@ -361,7 +362,11 @@ class AiChat
                     ? "🔍 *(Sedang mencari informasi di internet...)* ⏳" 
                     : "🌐 *(Sedang mengunjungi website...)* ⏳";
 
-                $onToken("\n\n[HIDE_TOOL_CALL]\n$statusMsg\n\n");
+                // Hanya kirim jika status berubah atau belum pernah kirim
+                if ($lastStatus !== $statusMsg) {
+                    $onToken("\n\n[HIDE_TOOL_CALL]\n$statusMsg\n\n");
+                    $lastStatus = $statusMsg;
+                }
                 $messages[] = [
                     'role' => 'assistant',
                     'content' => $fullContent ?: '🔍 *(Menjalankan pencarian...)*', // Hindari error "Message content cannot be empty"
@@ -396,7 +401,7 @@ class AiChat
 
                 Log::info("Recursive stream starting. Messages count: " . count($messages));
                 // Teruskan array messages baru yang berisi referensi tool result kembali ke AI
-                $this->streamOpenAIResponses($messages, $onToken);
+                $this->streamOpenAIResponses($messages, $onToken, $lastStatus);
             } else {
                 // Not a tool call after all, release the buffer to the user
                 if ($potentialToolBuffer !== '') {

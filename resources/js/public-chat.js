@@ -551,7 +551,20 @@ else {
         // Menggunakan regex yang lebih kuat untuk menangkap whitespace/newline di antara nama tool dan {
         text = text.replace(/(search_web|browse_url|tool_call_name)[\s\n]*\{[\s\S]*?\}/gi, '');
         text = text.replace(/\{[\s\S]*?"(query|url)"[\s\S]*?\}/gi, ''); // Fallback jika nama tool hilang
-        // Hapus marker itu sendiri
+
+      // Deduplicate: Hanya tampilkan status [HIDE_TOOL_CALL] terakhir
+      // Regex ini mencari blok [HIDE_TOOL_CALL]...⏳ yang diikuti oleh blok [HIDE_TOOL_CALL] lainnya
+      const statusRegex = /\[HIDE_TOOL_CALL\][\s\S]*?⏳[\s\n]*/gi;
+      const matches = text.match(statusRegex);
+      if (matches && matches.length > 1) {
+          // Ganti semua kecuali yang terakhir dengan string kosong
+          let lastMatch = matches[matches.length - 1];
+          let parts = text.split(statusRegex);
+          // Gabungkan kembali teks tanpa status yang lama
+          text = parts.join('') + lastMatch;
+      }
+
+      // Hapus marker itu sendiri
         text = text.replace(/\[HIDE\w*_TOOL_CALL\]/g, '');
       }
       return text;
