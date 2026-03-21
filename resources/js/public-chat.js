@@ -76,17 +76,22 @@ else {
   const ArtifactManager = {
     panel: document.getElementById('artifactsSidebar'),
     iframe: document.getElementById('artifactIframe'),
+    iframeWrapper: document.getElementById('iframeWrapper'),
     mermaidContainer: document.getElementById('artifactMermaid'),
     emptyState: document.getElementById('artifactEmpty'),
     title: document.getElementById('artifactTitle'),
     copyBtn: document.getElementById('artifactCopy'),
     downloadBtn: document.getElementById('artifactDownload'),
     closeBtn: document.getElementById('artifactClose'),
+    toggleBtn: document.getElementById('artifactToggle'),
+    resizer: document.getElementById('artifactResizer'),
     currentContent: '',
     currentLang: '',
+    isResizing: false,
 
     init() {
       on(this.closeBtn, 'click', () => this.close());
+      on(this.toggleBtn, 'click', () => this.open());
       on(this.copyBtn, 'click', () => {
         navigator.clipboard.writeText(this.currentContent).then(() => {
           const original = this.copyBtn.innerHTML;
@@ -95,12 +100,70 @@ else {
         });
       });
       on(this.downloadBtn, 'click', () => this.download());
+      
+      this.initResizer();
+      
+      // Restore saved width
+      const savedWidth = localStorage.getItem('artifactSidebarWidth') || (window.innerWidth * 0.45);
+      if (savedWidth && window.innerWidth >= 1024) {
+          layout.style.setProperty('--artifact-width', savedWidth + 'px');
+      }
+    },
+
+    initResizer() {
+      if (!this.resizer) return;
+      
+      const startResizing = (e) => {
+        this.isResizing = true;
+        this.resizer.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        this.iframe.style.pointerEvents = 'none';
+      };
+
+      const stopResizing = () => {
+        this.isResizing = false;
+        this.resizer.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        this.iframe.style.pointerEvents = 'auto';
+        
+        const currentWidth = layout.style.getPropertyValue('--artifact-width');
+        if (currentWidth) {
+            localStorage.setItem('artifactSidebarWidth', parseInt(currentWidth));
+        }
+      };
+
+      const resize = (e) => {
+        if (!this.isResizing) return;
+        const width = window.innerWidth - e.clientX;
+        if (width > 300 && width < window.innerWidth * 0.8) {
+          layout.style.setProperty('--artifact-width', width + 'px');
+          // Update resizer position handle
+          this.resizer.style.right = (width - 3) + 'px';
+        }
+      };
+
+      on(this.resizer, 'mousedown', startResizing);
+      on(window, 'mousemove', resize);
+      on(window, 'mouseup', stopResizing);
     },
 
     open() {
       if (!layout) return;
       layout.setAttribute('data-artifacts', 'open');
       this.panel.classList.remove('hidden');
+      if (this.resizer) this.resizer.classList.remove('hidden');
+      if (this.toggleBtn) this.toggleBtn.classList.add('hidden');
+      
+      // Initial resizer position based on CSS variable or default
+      let currentWidth = parseInt(layout.style.getPropertyValue('--artifact-width'));
+      if (!currentWidth) {
+          currentWidth = window.innerWidth * 0.45;
+          layout.style.setProperty('--artifact-width', currentWidth + 'px');
+      }
+      if (this.resizer) this.resizer.style.right = (currentWidth - 3) + 'px';
+
       requestAnimationFrame(() => {
         this.panel.classList.remove('translate-x-full');
       });
@@ -110,10 +173,24 @@ else {
       if (!layout) return;
       layout.setAttribute('data-artifacts', 'closed');
       this.panel.classList.add('translate-x-full');
-      setTimeout(() => this.panel.classList.add('hidden'), 300);
+      if (this.resizer) this.resizer.classList.add('hidden');
+      if (this.currentContent && this.toggleBtn) {
+          this.toggleBtn.classList.remove('hidden');
+      }
+      setTimeout(() => {
+          if (layout.getAttribute('data-artifacts') === 'closed') {
+              this.panel.classList.add('hidden');
+          }
+      }, 300);
     },
 
-    update(content) {
+    lastUpdateTime: 0,
+    update(content, force = false) {
+      // Throttle updates during streaming (max once per 300ms)
+      const now = Date.now();
+      if (!force && now - this.lastUpdateTime < 300) return;
+      this.lastUpdateTime = now;
+
       // Find code blocks: ```lang\ncode\n```
       const regex = /```(html|css|js|javascript|mermaid)[\s\n]+([\s\S]*?)(?:```|$)/gi;
       let lastBlock = null;
@@ -137,16 +214,26 @@ else {
       this.currentLang = lang;
       this.title.innerText = `Preview ${lang.toUpperCase()}`;
       
+      // Add streaming indicator
+      if (document.querySelector('.streaming')) {
+          if (!this.title.querySelector('.artifact-streaming-tag')) {
+              this.title.innerHTML += '<span class="artifact-streaming-tag">Live</span>';
+          }
+      } else {
+          const tag = this.title.querySelector('.artifact-streaming-tag');
+          if (tag) tag.remove();
+      }
+
       this.emptyState.classList.add('hidden');
       document.getElementById('artifactContent').classList.add('has-artifact');
 
       if (lang === 'mermaid') {
-        this.iframe.classList.add('hidden');
+        this.iframeWrapper.classList.add('hidden');
         this.mermaidContainer.classList.remove('hidden');
         this.renderMermaid(code);
       } else {
         this.mermaidContainer.classList.add('hidden');
-        this.iframe.classList.remove('hidden');
+        this.iframeWrapper.classList.remove('hidden');
         this.renderCode(code, lang);
       }
     },
@@ -226,6 +313,91 @@ else {
       if (this.currentMood === mood) return;
       this.currentMood = mood;
       document.documentElement.setAttribute('data-mood', mood);
+    }
+  };
+
+  // ===== Chip Manager (Smart Interactive Chips) =====
+  const ChipManager = {
+    container: null,
+    
+    getSuggestions(mode, content = '') {
+      let suggestions = [];
+      
+      // Auto-suggest "Lanjutkan" if content looks truncated (unclosed code blocks)
+      const openBlocks = (content.match(/```/g) || []).length;
+      if (openBlocks % 2 !== 0) {
+          suggestions.push({ 
+            text: 'Lanjutkan kodenya', 
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>',
+            prompt: 'Lanjutkan kodenya sampai selesai.'
+          });
+      }
+
+      const modeMap = {
+        default: [
+          { text: 'Rangkum ini', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>' },
+          { text: 'Apa langkah selanjutnya?', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>' },
+          { text: 'Berikan contoh lain', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>' }
+        ],
+        koding: [
+          { text: 'Jelaskan kodenya', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>' },
+          { text: 'Buatkan Unit Test', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' },
+          { text: 'Optimalkan kinerjanya', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>' }
+        ],
+        translate: [
+          { text: 'Cek tata bahasa', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 11 12 14 15 11"/></svg>' },
+          { text: 'Buat lebih formal', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>' },
+          { text: 'Terjemahkan ke Inggris', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>' }
+        ],
+        storyteller: [
+          { text: 'Lanjutkan ceritanya', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' },
+          { text: 'Berikan plot twist', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/></svg>' },
+          { text: 'Buat lebih dramatis', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 14c2 0 3 2 3 2s-1 1-3 1-3-1-3-1 1-2 3-2z"/></svg>' }
+        ]
+      };
+      
+      const baseItems = modeMap[mode] || modeMap.default;
+      return [...suggestions, ...baseItems];
+    },
+
+    render(mode, aiContent = '') {
+      this.clear();
+      
+      const suggestions = this.getSuggestions(mode, aiContent);
+      const row = document.createElement('div');
+      row.className = 'chips-container';
+      row.id = 'activeChips';
+      
+      suggestions.forEach(item => {
+        const chip = document.createElement('div');
+        chip.className = 'action-chip';
+        chip.innerHTML = `${item.icon}<span>${item.text}</span>`;
+        chip.addEventListener('click', () => {
+          this.clear();
+          if (promptEl) {
+            promptEl.value = item.prompt || item.text;
+            sendMessage();
+          }
+        });
+        row.appendChild(chip);
+      });
+      
+      // Append to the last AI response block
+      const lastAI = chatList?.lastElementChild;
+      if (lastAI && lastAI.classList.contains('streaming')) {
+          // Streaming is done, append below the article
+          lastAI.appendChild(row);
+      } else if (lastAI) {
+          // Fallback
+          lastAI.appendChild(row);
+      }
+      
+      scrollBottom();
+    },
+
+    clear() {
+      const existing = document.getElementById('activeChips');
+      if (existing) existing.remove();
     }
   };
   // Utils
@@ -400,9 +572,12 @@ else {
       return;
     }
     const row = document.createElement('div');
-    row.className = 'fade-in flex gap-3 streaming';
-    row.innerHTML = `<div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs font-semibold">JG</div>
-                   <article class="ai-prose prose prose-sm prose-invert max-w-none flex-1 min-w-0">${md(content)}</article>`;
+    row.className = 'fade-in flex flex-col gap-1 streaming';
+    row.innerHTML = `
+      <div class="flex gap-3">
+        <div class="shrink-0 mt-1 size-8 rounded-full bg-[#1f2937] grid place-items-center text-xs font-semibold">JG</div>
+        <article class="ai-prose prose prose-sm prose-invert max-w-none flex-1 min-w-0">${md(content)}</article>
+      </div>`;
     chatList.appendChild(row);
     renderMath(row.querySelector('article'));
     enhanceCode(row);
@@ -582,6 +757,7 @@ else {
       const attachedPreviewSrc = attachmentPreviewImg.src;
       
       renderUser(content, attachedDbUrl ? attachedPreviewSrc : null);
+      ChipManager.clear();
 
       controller = new AbortController();
       sendBtn?.classList.add('opacity-60', 'pointer-events-none');
@@ -631,6 +807,7 @@ else {
                 }
                 
                 renderAI(hideIncompleteMath(cleanedAi), true);
+                ArtifactManager.update(cleanedAi);
               }
               if (evt === 'rename') {
                 try {
@@ -658,7 +835,12 @@ else {
           renderAI('(Batas harian non-VIP untuk IP ini telah tercapai. Login VIP untuk akses tanpa batas.)');
         }
       } finally {
-        if (ai) renderAI(cleanAiContent(ai), true);
+        if (ai) {
+          const cleaned = cleanAiContent(ai);
+          renderAI(cleaned, true);
+          ArtifactManager.update(cleaned, true); // Force update at the end
+          ChipManager.render(selectedModeInput?.value || 'default', cleaned);
+        }
         typingEl?.classList.add('hidden');
         sendBtn?.classList.remove('opacity-60', 'pointer-events-none');
         stopBtn?.classList.add('hidden');
