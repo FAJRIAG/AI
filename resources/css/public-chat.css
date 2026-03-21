@@ -319,6 +319,16 @@ body {
   outline-offset: 2px !important;
 }
 
+/* Fix text selection on all interactive buttons */
+button, 
+.action-chip, 
+.mode-btn, 
+[data-toggle="sidebar"] {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
 /* === Preview button in code header === */
 .code-preview-btn {
   display: inline-flex;
@@ -477,16 +487,36 @@ body {
 }
 
 /* === Artifacts Panel (Claude Style) === */
+/* === Artifacts Layout Base === */
 #appLayout {
-  transition: grid-template-columns 0.3s ease-in-out;
+  --sidebar-w: 280px;
+  --artifact-width: 0px;
+  --artifact-max-w: 800px;
+  display: grid;
+  /* Default: Sidebar + Chat */
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  transition: grid-template-columns 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* 1 Column: Chat only */
+#appLayout.sidebar-hidden[data-artifacts="closed"] {
+  grid-template-columns: 1fr;
+}
+
+/* 3 Columns: Sidebar + Chat + Artifact */
 #appLayout[data-artifacts="open"] {
-  grid-template-columns: 280px 1fr 45%;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--artifact-width);
 }
 
+/* 2 Columns: Chat + Artifact (Sidebar hidden) */
 #appLayout.sidebar-hidden[data-artifacts="open"] {
-  grid-template-columns: 1fr 45%;
+  grid-template-columns: 1fr var(--artifact-width);
+}
+
+@media (min-width: 1024px) {
+  #appLayout[data-artifacts="open"] {
+    --artifact-width: min(var(--artifact-max-w), 45vw);
+  }
 }
 
 @media (max-width: 1023px) {
@@ -495,52 +525,75 @@ body {
   }
 }
 
+/* Mobile Base: Always 1 column */
+@media (max-width: 767px) {
+  #appLayout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* === Responsive UI Refinements === */
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+  .composer-wrapper {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .unified-composer {
+    padding: 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+
+  #sendText {
+    display: none;
+  }
+  
+  #send {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  #modeSelector {
+    justify-content: center;
+  }
+  
+  .mode-btn {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.6rem !important;
+  }
+
+  [data-toggle="sidebar"] {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #artifactsSidebar {
+    width: 100% !important;
+    position: fixed !important;
+    z-index: 80 !important;
+  }
+}
+
+/* Ultra-wide (> 1440px) */
+@media (min-width: 1440px) {
+  .max-w-3xl {
+    max-width: 56rem !important;
+  }
+}
+
+/* Artifact Sidebar Transition Controls */
 #artifactsSidebar {
   z-index: 40;
   box-shadow: -10px 0 30px -15px rgba(0, 0, 0, 0.5);
-}
-
-#appLayout[data-artifacts="open"] #artifactsSidebar {
-  transform: translateX(0);
-}
-
-#appLayout[data-artifacts="closed"] #artifactsSidebar {
-  display: none !important;
-}
-
-/* Mermaid Customization */
-#artifactMermaid svg {
-  max-width: 100%;
-  height: auto;
-}
-
-.mermaid-loading {
-  opacity: 0.5;
-  filter: blur(2px);
-  pointer-events: none;
-}
-
-/* Artifact Controls Ripple/Hover */
-#artifactCopy:active, #artifactDownload:active {
-  transform: scale(0.95);
-}
-
-/* Iframe adjustments */
-#artifactIframe {
-  background: white;
-  border-radius: 4px;
-}
-
-/* If artifact is code/mermaid, hide empty state */
-.has-artifact #artifactEmpty {
-  display: none !important;
-}
-
-/* === Artifacts Panel V2 === */
-#appLayout {
-  --artifact-width: 0px;
-  grid-template-columns: 280px 1fr var(--artifact-width);
-  transition: grid-template-columns 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100% !important;
+  min-width: 0;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  box-shadow: -30px 0 60px -15px rgba(0, 0, 0, 0.6);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 #artifactsSidebar {
@@ -559,17 +612,14 @@ body {
   pointer-events: none;
 }
 
-[data-artifacts="closed"] #appLayout {
-  --artifact-width: 0px !important;
+#appLayout[data-artifacts="open"] #artifactsSidebar {
+  transform: translateX(0);
 }
 
 [data-artifacts="closed"] #artifactsSidebar {
   opacity: 0;
   pointer-events: none;
   transform: translateX(100%);
-}
-
-[data-artifacts="closed"] #artifactResizer {
   display: none !important;
 }
 
@@ -697,4 +747,63 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+/* === Unified Composer === */
+.unified-composer {
+  background: rgba(26, 31, 42, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.2), 
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.unified-composer:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(26, 31, 42, 0.85);
+}
+
+.unified-composer:focus-within {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.3), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.1),
+    0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+#prompt::placeholder {
+  transition: opacity 0.3s ease;
+}
+
+#prompt:focus::placeholder {
+  opacity: 0.3;
+}
+
+#send {
+  position: relative;
+  overflow: hidden;
+}
+
+#send::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+#send:hover::after {
+  opacity: 1;
+}
+
+.composer-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
