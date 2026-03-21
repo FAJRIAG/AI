@@ -11,29 +11,36 @@ JriGPT adalah asisten AI cerdas tingkat lanjut yang dikembangkan secara khusus o
 ### 🌐 Web-Agent (Browser Control) - **Powered by Jina Reader**
 JriGPT tidak hanya memberikan ringkasan pencarian yang terbatas. Ia bisa bener-bener "mengunjungi" website spesifik (seperti iBox, Shopee, atau portal berita) menggunakan integrasi **Jina Reader**.
 - **Deep Extraction**: Membaca isi lengkap halaman dalam format Markdown yang bersih.
-- **Bypass Bot**: Mampu menembus proteksi JavaScript dan bot di situs-situs modern (seperti iBox).
-- **Agentic Loops**: Mampu melakukan rantai tindakan (Cari -> Pilih Link -> Baca Detail) secara otomatis.
+- **Bypass Bot**: Mampu menembus proteksi JavaScript dan bot di situs-situs modern.
+- **Agentic Loops**: Mampu melakukan rantai tindakan secara otomatis.
 
 ### 🎭 Emotional Tone Sync (Real-time Sentiment)
-JriGPT memahami perasaan Anda. Antarmuka (UI) JriGPT akan berubah warna secara dinamis, dan nada bicara AI akan menyesuaikan diri berdasarkan cara Anda mengetik:
-- 🔴 **Panic Mode**: UI berubah merah saat Anda mengetik dengan CAPSLOCK atau kata-kata mendesak. JriGPT akan merespons dengan lebih tenang.
-- 🟣 **Creative Mode**: UI berubah ungu saat brainstorming. AI akan menjadi lebih imajinatif.
-- 🔵 **Thoughtful Mode**: UI berubah biru langit untuk analisis mendalam.
-- 🟢 **Calm Mode**: UI hijau emerald standar yang elegan.
+JriGPT memahami perasaan Anda. Antarmuka (UI) akan berubah warna secara dinamis berdasarkan cara Anda mengetik:
+- 🔴 **Panic Mode**: UI berubah merah saat mendesak.
+- 🟣 **Creative Mode**: UI berubah ungu saat brainstorming.
+- 🔵 **Thoughtful Mode**: UI berubah biru untuk analisis mendalam.
 
-### 🧠 Intelligent Memory
-JriGPT mampu mengekstrak dan mengingat fakta penting tentang Anda (nama, hobi, preferensi teknis) secara otomatis untuk memberikan jawaban yang dipersonalisasi di masa depan.
+### 🚀 Premium Artifacts Studio 2.0
+Tampilan eksklusif layaknya asisten koding profesional (**Claude-Style**).
+- **Live Preview**: Render HTML/CSS/JS dan diagram **Mermaid** secara instan.
+- **Resizable Sidebar**: Panel preview yang fleksibel dengan fitur *glassmorphism* tingkat lanjut.
+- **Smart Toggle**: Kontrol penuh untuk membuka/menutup preview dengan transisi ultra-smooth.
 
-### 🚀 Artifacts UI
-Tampilan layaknya asisten profesional yang dapat merender kode HTML/CSS/JS dan diagram **Mermaid** secara real-time di panel samping.
+### 📱 Universal Responsiveness (Cross-Device)
+JriGPT didesain untuk pengalaman premium di perangkat apapun:
+- **Mobile (HP)**: Antarmuka yang dioptimalkan untuk layar kecil dengan input bar yang cerdas.
+- **Ultra-wide Monitor**: Pembatasan lebar Artifact (Max 800px) untuk menjaga keterbacaan di layar raksasa.
 
-### 👁️ Multimodal Vision & Document Analysis
-- **Vision**: Analisis gambar secara mendalam.
-- **Docs**: Upload file **PDF, TXT,** atau **CSV** untuk rangkuman otomatis.
+### 🪄 Smart Interactive Chips
+Navigasi cepat setelah AI merespons (Rangkum, Lanjutkan kodenya, Langkah selanjutnya, dll) untuk meningkatkan alur koding Anda.
+
+### 🧠 Intelligent Memory & Multimodal
+- **Memory**: Mengingat preferensi teknis dan fakta penting Anda secara otomatis.
+- **Vision**: Analisis gambar dan dokumen (**PDF, TXT, CSV**) secara mendalam.
 
 ## 🛠️ Stack Teknologi
 - **Backend**: Laravel 12 (PHP 8.2+)
-- **Frontend**: Blade, Vanilla JS, Tailwind CSS, CSS Variables for Themes
+- **Frontend**: Blade, Vanilla JS, Tailwind CSS, CSS Variables for Dynamic Themes
 - **AI Engine**: Groq / OpenAI / JriGPT Private API
 - **Web Reader**: Jina Reader API Integration
 - **Tools**: Marked.js, KaTeX, Mermaid.js, Highlight.js
