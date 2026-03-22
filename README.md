@@ -31,11 +31,15 @@ JriGPT didesain untuk pengalaman premium di perangkat apapun:
 - **Mobile (HP)**: Antarmuka yang dioptimalkan untuk layar kecil dengan input bar yang cerdas.
 - **Ultra-wide Monitor**: Pembatasan lebar Artifact (Max 800px) untuk menjaga keterbacaan di layar raksasa.
 
-### 🪄 Smart Interactive Chips
-Navigasi cepat setelah AI merespons (Rangkum, Lanjutkan kodenya, Langkah selanjutnya, dll) untuk meningkatkan alur koding Anda.
+### 📁 Project Workspaces (Konteks Proyek) - **VIP Exclusive**
+Kelola proyek koding Anda secara terpisah dengan sistem Workspace yang cerdas.
+- **Multi-Workspace**: Buat, ganti, dan hapus workspace khusus untuk proyek yang berbeda (misal: "Web AI", "Personal", "Koding").
+- **Project Memory**: Berikan instruksi khusus per-workspace (seperti tech stack, aturan koding, atau tujuan proyek).
+- **Auto-Context**: JriGPT akan otomatis mengingat semua konteks di dalam workspace tersebut tanpa perlu diingatkan kembali di setiap chat baru.
+- **Smart Filtering**: Sidebar yang bersih, hanya menampilkan histori chat yang relevan dengan workspace yang sedang aktif.
 
 ### 🧠 Intelligent Memory & Multimodal
-- **Memory**: Mengingat preferensi teknis dan fakta penting Anda secara otomatis.
+- **Memory**: Mengingat preferensi teknis dan fakta penting Anda secara otomatis (User-level & Project-level).
 - **Vision**: Analisis gambar dan dokumen (**PDF, TXT, CSV**) secara mendalam.
 
 ## 🛠️ Stack Teknologi
