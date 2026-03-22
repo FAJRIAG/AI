@@ -25,6 +25,7 @@ Route::middleware(['auth', 'vip'])->group(function () {
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
     Route::patch('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+    Route::post('/projects/{project}/sync', [\App\Http\Controllers\ProjectKnowledgeController::class, 'sync'])->name('projects.sync');
 
     Route::post('/projects/{project}/sessions', [ChatSessionController::class, 'store'])->name('sessions.store');
     Route::patch('/sessions/{session}', [ChatSessionController::class, 'update'])->name('sessions.update');

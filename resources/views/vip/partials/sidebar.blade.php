@@ -16,7 +16,7 @@
           <div class="size-8 rounded bg-emerald-600 grid place-items-center font-bold text-white shadow-[0_0_15px_rgba(5,150,105,0.3)]">JG</div>
           <div class="font-bold tracking-tight text-gray-100">JriGPT <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded ml-1 border border-emerald-500/30">VIP</span></div>
         </div>
-        <button onclick="openProjectSettings({{ $activeProject->id }}, '{{ addslashes($activeProject->name) }}', '{{ addslashes($activeProject->description) }}')" 
+        <button onclick="openProjectSettings({{ $activeProject->id }}, '{{ addslashes($activeProject->name) }}', '{{ addslashes($activeProject->description) }}', '{{ $activeProject->last_indexed_at ? $activeProject->last_indexed_at->diffForHumans() : '' }}')" 
                 class="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-emerald-400 transition-colors" title="Workspace Settings">
             <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />

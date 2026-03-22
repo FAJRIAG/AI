@@ -36,6 +36,7 @@ Kelola proyek koding Anda secara terpisah dengan sistem Workspace yang cerdas.
 - **Multi-Workspace**: Buat, ganti, dan hapus workspace khusus untuk proyek yang berbeda (misal: "Web AI", "Personal", "Koding").
 - **Project Memory**: Berikan instruksi khusus per-workspace (seperti tech stack, aturan koding, atau tujuan proyek).
 - **Auto-Context**: JriGPT akan otomatis mengingat semua konteks di dalam workspace tersebut tanpa perlu diingatkan kembali di setiap chat baru.
+- **Deep Research Mode (True RAG)**: JriGPT bisa mempelajari ribuan dokumen teknis (PDF/Code) via **Pinecone Vector DB** untuk menjawab pertanyaan yang sangat spesifik dengan akurasi tinggi.
 - **Smart Filtering**: Sidebar yang bersih, hanya menampilkan histori chat yang relevan dengan workspace yang sedang aktif.
 
 ### 🧠 Intelligent Memory & Multimodal

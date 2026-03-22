@@ -166,7 +166,7 @@ Luas lingkaran adalah A = \pi r^2.
                 echo 'data: ' . json_encode(['token' => $token], JSON_UNESCAPED_UNICODE) . "\n\n";
                 @ob_flush();
                 @flush();
-            }, $mood);
+            }, $mood, $session->project);
 
             // Ekstraksi Memori Baru secara asinkron (Fase 4)
             // Menggunakan dispatch agar tidak menghambat response 'done'

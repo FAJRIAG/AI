@@ -8,17 +8,9 @@ use Illuminate\Support\Facades\Log;
 class AiChat
 {
     /**
-     * Stream jawaban model sebagai potongan token.
-     * $messages = [
-     *   ['role'=>'system','content'=>'...'],
-     *   ['role'=>'user','content'=>'...'],
-     *   ['role'=>'assistant','content'=>'...'],
-     *   ...
-     * ]
-     *
-     * $onToken menerima string token setiap kali ada delta baru.
+     * @param \App\Models\Project|null $project
      */
-    public function stream(array $messages, \Closure $onToken, string $mood = 'calm'): void
+    public function stream(array $messages, \Closure $onToken, string $mood = 'calm', $project = null): void
     {
         // Hubungkan mood ke instruksi nada di system prompt
         $toneInstruction = \App\Services\SentimentService::getToneInstruction($mood);
@@ -40,8 +32,9 @@ class AiChat
         // TAMBAHKAN INSTRUKSI WEB AGENT KE SYSTEM PROMPT
         $agenticPrompt = "\n\nKEMAMPUAN WEB AGENT:
 1. Gunakan `search_web` untuk mencari informasi umum atau menemukan URL yang relevan.
-2. Gunakan `browse_url` untuk mengunjungi URL spesifik guna membaca isi lengkap halaman tersebut. Ini sangat berguna jika informasi yang Anda butuhkan (seperti harga detail, stok, atau isi berita lengkap) tidak ada di ringkasan hasil pencarian.
-3. Anda bisa melakukan beberapa kali pencarian atau kunjungan halaman secara berurutan untuk menyelesaikan tugas yang kompleks.";
+2. Gunakan `browse_url` untuk mengunjungi URL spesifik guna membaca isi lengkap halaman tersebut. 
+3. Gunakan `deep_research` untuk mencari informasi mendalam dari dokumen-dokumen internal atau kodingan yang ada di Workspace/Project saat ini. Ini adalah \"Infinite Memory\" Anda untuk project ini.
+4. Anda bisa melakukan beberapa kali pencarian atau kunjungan halaman secara berurutan untuk menyelesaikan tugas yang kompleks.";
 
         foreach ($messages as &$msg) {
             if ($msg['role'] === 'system') {
@@ -50,16 +43,14 @@ class AiChat
             }
         }
 
-        $provider = strtolower(config('ai.provider', 'groq'));
-        // Saat ini kamu pakai OpenAI — panggil Responses API:
         if ($provider === 'groq' || $provider === 'openai' || $provider === 'jrigpt') {
-            $this->streamOpenAIResponses($messages, $onToken);
+            $this->streamOpenAIResponses($messages, $onToken, $project);
             return;
         }
 
         // Fallback: tetap pakai OpenAI Responses
         $lastStatus = '';
-        $this->streamOpenAIResponses($messages, $onToken, $lastStatus);
+        $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus);
     }
 
     /**
@@ -67,7 +58,7 @@ class AiChat
      * Endpoint: POST https://api.groq.com/openai/v1/chat/completions
      * Payload: { model, messages|input, stream: true }
      */
-    private function streamOpenAIResponses(array $messages, \Closure $onToken, string &$lastStatus = ''): void
+    private function streamOpenAIResponses(array $messages, \Closure $onToken, $project = null, string &$lastStatus = ''): void
     {
         // Prevent PHP execution timeout for long generations
         @set_time_limit(0);
@@ -136,6 +127,23 @@ class AiChat
                                 ]
                             ],
                             'required' => ['url']
+                        ]
+                    ]
+                ],
+                [
+                    'type' => 'function',
+                    'function' => [
+                        'name' => 'deep_research',
+                        'description' => 'Cari informasi teknis, algoritma, atau isi dokumen dari Workspace Knowledge Base. Gunakan init jika pengguna menanyakan sesuatu tentang kodingan atau dokumen yang sudah di-index di proyek ini.',
+                        'parameters' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'query' => [
+                                    'type' => 'string',
+                                    'description' => 'Kueri semantik untuk mencari di database pengetahuan, contoh: "bagaimana sistem auth bekerja?"'
+                                ]
+                            ],
+                            'required' => ['query']
                         ]
                     ]
                 ]
@@ -358,9 +366,10 @@ class AiChat
                 
                 // Berikan feedback visual yang tepat berdasarkan tool pertama
                 $firstTool = $toolCallsBuffer[0]['function']['name'] ?? 'tool';
-                $statusMsg = ($firstTool === 'search_web') 
-                    ? "🔍 *(Sedang mencari informasi di internet...)* ⏳" 
-                    : "🌐 *(Sedang mengunjungi website...)* ⏳";
+                $statusMsg = "⚙️ *(Sedang mencari...)*";
+                if ($firstTool === 'search_web') $statusMsg = "🔍 *(Sedang mencari informasi di internet...)* ⏳";
+                elseif ($firstTool === 'browse_url') $statusMsg = "🌐 *(Sedang mengunjungi website...)* ⏳";
+                elseif ($firstTool === 'deep_research') $statusMsg = "🧠 *(Sedang mencari di memori proyek...)* ⏳";
 
                 // Hanya kirim jika status berubah atau belum pernah kirim
                 if ($lastStatus !== $statusMsg) {
@@ -400,12 +409,24 @@ class AiChat
                             'tool_call_id' => $tc['id'],
                             'content' => $result
                         ];
+                    } elseif ($tc['function']['name'] === 'deep_research' && $project) {
+                        $args = json_decode($tc['function']['arguments'], true);
+                        $query = $args['query'] ?? '';
+                        
+                        $knowService = resolve(\App\Services\ProjectKnowledgeService::class);
+                        $result = $knowService->search($project, $query);
+                        
+                        $messages[] = [
+                            'role' => 'tool',
+                            'tool_call_id' => $tc['id'],
+                            'content' => $result
+                        ];
                     }
                 }
 
                 Log::info("Recursive stream starting. Messages count: " . count($messages));
                 // Teruskan array messages baru yang berisi referensi tool result kembali ke AI
-                $this->streamOpenAIResponses($messages, $onToken, $lastStatus);
+                $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus);
             } else {
                 // Not a tool call after all, release the buffer to the user
                 if ($potentialToolBuffer !== '') {
