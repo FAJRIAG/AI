@@ -32,9 +32,9 @@ class AiChat
         // TAMBAHKAN INSTRUKSI WEB AGENT KE SYSTEM PROMPT
         $agenticPrompt = "\n\nKEMAMPUAN WEB AGENT:
 1. Gunakan `search_web` untuk mencari informasi umum atau menemukan URL yang relevan.
-2. Gunakan `browse_url` untuk mengunjungi URL spesifik guna membaca isi lengkap halaman tersebut. 
-3. Gunakan `deep_research` untuk mencari informasi mendalam dari dokumen-dokumen internal atau kodingan yang ada di Workspace/Project saat ini. Ini adalah \"Infinite Memory\" Anda untuk project ini.
-4. Anda bisa melakukan beberapa kali pencarian atau kunjungan halaman secara berurutan untuk menyelesaikan tugas yang kompleks.";
+3. Gunakan `get_links` untuk melihat daftar halaman lain di sebuah situs. Ini membantu Anda \"menjelajahi\" menu navigasi atau mencari halaman detail.
+4. Gunakan `deep_research` untuk mencari informasi mendalam dari dokumen-dokumen internal atau kodingan yang ada di Workspace/Project saat ini. Ini adalah \"Infinite Memory\" Anda untuk project ini.
+5. Anda adalah Web Agent Mandiri: Jika Anda tidak menemukan jawaban di halaman pertama, gunakan `get_links` untuk mencari halaman lain (seperti \"Pricing\", \"About\", atau \"Details\") dan kunjungi halaman tersebut.";
 
         foreach ($messages as &$msg) {
             if ($msg['role'] === 'system') {
@@ -144,6 +144,23 @@ class AiChat
                                 ]
                             ],
                             'required' => ['query']
+                        ]
+                    ]
+                ],
+                [
+                    'type' => 'function',
+                    'function' => [
+                        'name' => 'get_links',
+                        'description' => 'Ambil semua daftar link yang ada di sebuah URL. Gunakan ini jika Anda ingin melihat menu navigasi atau halaman lain di sebuah website.',
+                        'parameters' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'url' => [
+                                    'type' => 'string',
+                                    'description' => 'URL lengkap website yang ingin dilihat daftar link-nya.'
+                                ]
+                            ],
+                            'required' => ['url']
                         ]
                     ]
                 ]
@@ -415,6 +432,16 @@ class AiChat
                         
                         $knowService = resolve(\App\Services\ProjectKnowledgeService::class);
                         $result = $knowService->search($project, $query);
+                        
+                        $messages[] = [
+                            'role' => 'tool',
+                            'tool_call_id' => $tc['id'],
+                            'content' => $result
+                        ];
+                    } elseif ($tc['function']['name'] === 'get_links') {
+                        $args = json_decode($tc['function']['arguments'], true);
+                        $url = $args['url'] ?? '';
+                        $result = \App\Services\BrowserService::getLinks($url);
                         
                         $messages[] = [
                             'role' => 'tool',

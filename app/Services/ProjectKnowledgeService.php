@@ -41,7 +41,7 @@ class ProjectKnowledgeService
 
             $project->update(['last_indexed_at' => now()]);
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("IndexProject Error: " . $e->getMessage());
             return false;
         }

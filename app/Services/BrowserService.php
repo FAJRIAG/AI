@@ -114,4 +114,66 @@ class BrowserService
 
         return "--- ISI HALAMAN DARI $baseUrl ---\n\n" . $content . "\n\n--- AKHIR HALAMAN ---";
     }
+
+    /**
+     * Extract all links from a URL.
+     */
+    public static function getLinks(string $url): string
+    {
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+            ])->timeout(20)->get($url);
+
+            if (!$response->successful()) {
+                return "Gagal mengambil link: Server merespons dengan status {$response->status()}.";
+            }
+
+            $html = $response->body();
+            libxml_use_internal_errors(true);
+            $dom = new DOMDocument();
+            $dom->loadHTML('<?xml encoding="UTF-8">' . $html);
+            libxml_clear_errors();
+
+            $xpath = new DOMXPath($dom);
+            $links = [];
+            $nodes = $xpath->query('//a[@href]');
+
+            foreach ($nodes as $node) {
+                $href = $node->getAttribute('href');
+                $text = trim($node->textContent);
+
+                if (empty($href) || str_starts_with($href, '#') || str_starts_with($href, 'javascript:')) {
+                    continue;
+                }
+
+                // Resolve relative URL
+                if (!str_starts_with($href, 'http')) {
+                    $parsed = parse_url($url);
+                    $base = $parsed['scheme'] . '://' . $parsed['host'];
+                    if (str_starts_with($href, '/')) {
+                        $href = $base . $href;
+                    } else {
+                        $href = $base . '/' . $href;
+                    }
+                }
+
+                $links[] = "- [$text]($href)";
+            }
+
+            // Deduplicate and limit
+            $links = array_unique($links);
+            $links = array_slice($links, 0, 50); // Limit to 50 links
+
+            if (empty($links)) {
+                return "Tidak ada link yang ditemukan di halaman ini.";
+            }
+
+            return "--- DAFTAR LINK DI $url ---\n\n" . implode("\n", $links) . "\n\n--- AKHIR DAFTAR ---";
+
+        } catch (\Exception $e) {
+            Log::error("BrowserService getLinks Error ($url): " . $e->getMessage());
+            return "Gagal mengambil link: Terjadi kesalahan koneksi atau timeout.";
+        }
+    }
 }
