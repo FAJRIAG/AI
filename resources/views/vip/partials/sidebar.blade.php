@@ -1,146 +1,129 @@
 {{-- resources/views/vip/partials/sidebar.blade.php --}}
 @php
-  /** @var \Illuminate\Support\Collection|\App\Models\Project[] $projects */
+  /** @var App\Models\Project $activeProject */
+  $sessions = $sessions ?? [];
+  $sid = $sid ?? null;
   $projects = $projects ?? collect();
-
-  // Jika controller sudah kirim $sessions (flat), pakai itu. Jika tidak, flatten dari $projects.
-  $sessionsList = collect($sessions ?? [])
-    ->when(empty($sessions ?? null), function ($c) use ($projects) {
-      return $projects->flatMap(function ($p) {
-        return collect($p->sessions ?? [])->map(function ($s) {
-          return [
-            'sid' => $s->id,
-            'title' => $s->title ?? 'Untitled',
-          ];
-        });
-      })->values();
-    })
-    ->values();
-
-  $activeSessionId = (string) request('session', '');
 @endphp
 
-{{-- =========================
-HEADER (sticky)
-========================= --}}
-<div class="shrink-0 sticky top-0 z-10 bg-[#0c1117] border-b border-white/10">
-  <div class="px-3 pt-3 pb-2 flex items-center gap-2 cursor-pointer hover:bg-white/5 rounded transition"
-    data-toggle="sidebar" aria-label="Toggle sidebar">
-    <div class="size-8 rounded bg-emerald-600 grid place-items-center font-bold">VIP</div>
-    <div class="font-semibold tracking-tight">JriGPT</div>
-  </div>
+<aside class="sidebar hidden md:flex flex-col h-full min-h-0 bg-[#0c1117] text-gray-200 border-r border-white/10">
 
-  <div class="px-3 pb-3 space-y-2">
-    @if(($projects->count() ?? 0) > 0)
-      @php $firstProject = $projects->first(); @endphp
-      {{-- New chat di project pertama --}}
-      <form method="POST" action="{{ route('sessions.store', $firstProject) }}" class="w-full">
-        @csrf
-        <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition
-                                     bg-black text-white border-black hover:bg-[#111]" type="submit">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor">
-            <path stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          New chat
-        </button>
-      </form>
-    @else
-      {{-- Belum ada project → buat project dulu (nama default) --}}
-      <form method="POST" action="{{ route('projects.store') }}" class="w-full">
-        @csrf
-        <input type="hidden" name="name" value="My First Project">
-        <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition
-                                     bg-black text-white border-black hover:bg-[#111]" type="submit">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor">
-            <path stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          New project
-        </button>
-      </form>
-    @endif
-
-    <div class="mt-2 relative">
-      <input id="chatSearch" placeholder="Search chats" class="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm placeholder:text-gray-500
-                    focus:outline-none focus:ring-2 focus:ring-emerald-600/60">
-      <svg class="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none">
-        <path stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
-      </svg>
-    </div>
-  </div>
-</div>
-
-{{-- =========================
-LIST (scroll area) — flat sessions + Aksi (Rename/Delete)
-========================= --}}
-<div id="sessionList" class="flex-1 overflow-y-auto min-h-0 px-2 py-2 space-y-1">
-  @forelse($sessionsList as $s)
-    @php
-      $sid = (string) ($s['sid'] ?? '');
-      $title = $s['title'] ?? 'Untitled';
-      $active = $sid !== '' && $sid === $activeSessionId;
-    @endphp
-
-    <div
-      class="group rounded-lg border border-white/5 {{ $active ? 'bg-white/10' : 'bg-white/[.03] hover:bg-white/[.06]' }} transition">
-      <div class="flex items-center gap-2 pl-2 pr-1">
-        <svg class="w-4 h-4 text-gray-400 shrink-0 mt-[2px]" viewBox="0 0 24 24" fill="none">
-          <path stroke="currentColor" stroke-width="2" d="M4 6h16v10H7l-3 3V6z" />
-        </svg>
-
-        <a href="{{ url('/vip') }}?session={{ $sid }}"
-          class="flex-1 py-2 text-sm truncate {{ $active ? 'text-emerald-300' : 'text-gray-200' }}">
-          {{ $title }}
-        </a>
-
-        {{-- Aksi: Rename & Delete (mirip publik) --}}
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-          {{-- Tombol Rename → pakai modal global (public.partials.modals.rename) --}}
-          <button type="button" class="p-1 rounded hover:bg-white/10" data-rename
-            data-url="{{ route('sessions.update', $sid) }}" data-title="{{ $title }}" title="Rename">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <path stroke="currentColor" stroke-width="2" d="m3 21 3-3m0 0 11-11a2.828 2.828 0 1 1 4 4L10 22m-4-4 4 4" />
+  {{-- Workspace Switcher (Header) --}}
+  <div class="shrink-0 sticky top-0 z-10 bg-[#0c1117] border-b border-white/10 p-3 space-y-3">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 cursor-pointer hover:bg-white/5 rounded transition"
+          data-toggle="sidebar" aria-label="Toggle sidebar">
+          <div class="size-8 rounded bg-emerald-600 grid place-items-center font-bold text-white shadow-[0_0_15px_rgba(5,150,105,0.3)]">JG</div>
+          <div class="font-bold tracking-tight text-gray-100">JriGPT <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded ml-1 border border-emerald-500/30">VIP</span></div>
+        </div>
+        <button onclick="openProjectSettings({{ $activeProject->id }}, '{{ addslashes($activeProject->name) }}', '{{ addslashes($activeProject->description) }}')" 
+                class="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-emerald-400 transition-colors" title="Workspace Settings">
+            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-          </button>
+        </button>
+    </div>
 
-          {{-- Delete session --}}
-          <form method="POST" action="{{ route('sessions.destroy', $sid) }}" onsubmit="return confirm('Hapus chat ini?')">
-            @csrf
-            @method('DELETE')
-            <button class="p-1 rounded hover:bg-white/10" title="Delete">
-              <svg class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none">
-                <path stroke="currentColor" stroke-width="2"
-                  d="M19 7H5m3 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m1 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7" />
-              </svg>
-            </button>
-          </form>
+    {{-- Project Dropdown Selector --}}
+    <div class="relative group">
+        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1 mb-1 block">Active Workspace</label>
+        <div class="flex items-center gap-2">
+            <select onchange="window.location.href='?project='+this.value" 
+                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 cursor-pointer appearance-none">
+                @foreach($projects as $p)
+                    <option value="{{ $p->id }}" {{ $activeProject->id == $p->id ? 'selected' : '' }}>
+                        📁 {{ $p->name }}
+                    </option>
+                @endforeach
+            </select>
+            <form method="POST" action="{{ route('projects.store') }}">
+                @csrf
+                <button type="submit" class="p-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg hover:bg-emerald-600/30 transition-all" title="Crate New Workspace">
+                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <form method="GET" action="{{ route('vip.home') }}" class="w-full">
+        <input type="hidden" name="project" value="{{ $activeProject->id }}">
+        <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition
+                 bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700 shadow-[0_4px_15px_rgba(5,150,105,0.2)]" type="submit">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor">
+            <path stroke-width="3" d="M12 4v16m8-8H4" />
+          </svg>
+          New Chat in Workspace
+        </button>
+      </form>
+  </div>
+
+  {{-- List (bagian yang scroll) --}}
+  <div id="sessionList" class="flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1 custom-scrollbar">
+    <div class="px-3 mb-2 flex items-center justify-between">
+        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Recent Chats</span>
+        <span class="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-400 border border-white/10">{{ count($sessions) }}</span>
+    </div>
+    @forelse($sessions as $s)
+      @php
+        $sSid = $s['sid'] ?? '';
+        $sTitle = $s['title'] ?? 'Untitled';
+        $active = ($sid == $sSid);
+      @endphp
+
+      <div class="group rounded-xl border border-transparent {{ $active ? 'bg-emerald-500/10 border-emerald-500/20' : 'hover:bg-white/[.04]' }} transition-all duration-200">
+        <div class="flex items-center gap-2 pl-3 pr-1">
+          <svg class="w-3.5 h-3.5 {{ $active ? 'text-emerald-400' : 'text-gray-500' }} shrink-0" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-width="2.5" d="M4 6h16v10H7l-3 3V6z" />
+          </svg>
+
+          <a href="{{ route('vip.home', ['session' => $sSid, 'project' => $activeProject->id]) }}"
+            class="flex-1 py-2.5 text-sm truncate {{ $active ? 'text-emerald-200 font-semibold' : 'text-gray-400 group-hover:text-gray-200' }}">
+            {{ $sTitle }}
+          </a>
+
+          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <form method="POST" action="{{ route('sessions.destroy', $sSid) }}"
+              onsubmit="return confirm('Hapus chat ini?')">
+              @csrf @method('DELETE')
+              <button class="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors" title="Delete">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <path stroke="currentColor" stroke-width="2"
+                    d="M19 7H5m3 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m1 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7" />
+                </svg>
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
-  @empty
-    <p class="text-sm text-gray-500 px-3">No chats yet.</p>
-  @endforelse
-</div>
-
-{{-- =========================
-FOOTER (tetap di bawah)
-========================= --}}
-<div id="sidebarFooter" class="mt-auto bg-[#0c1117] border-t border-white/10">
-  <div class="px-3 py-2 space-y-2">
-    <a href="{{ route('docs') }}"
-      class="w-full inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-emerald-400">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      </svg>
-      API Docs
-    </a>
-    <a href="{{ route('logout') }}"
-      class="w-full inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-red-500 font-semibold">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-        <path stroke="currentColor" stroke-width="2"
-          d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6A2.25 2.25 0 0 0 5.25 5.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12" />
-      </svg>
-      Logout
-    </a>
+    @empty
+      <div class="text-center py-10 px-4">
+          <div class="size-12 rounded-full bg-white/5 border border-white/10 grid place-items-center mx-auto mb-3">
+              <svg class="size-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          </div>
+          <p class="text-xs text-gray-500">Workspace ini masih kosong. Mulai chat pertama kamu!</p>
+      </div>
+    @endforelse
   </div>
-</div>
+
+  {{-- Sidebar Footer --}}
+  <div id="sidebarFooter" class="mt-auto shrink-0 bg-[#0c1117] border-t border-white/10 p-3 space-y-2">
+      <div class="flex items-center gap-3 px-3 py-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10 mb-2">
+          <div class="size-8 rounded-lg bg-emerald-500/20 grid place-items-center text-emerald-400 font-bold">
+              {{ substr(auth()->user()->name, 0, 1) }}
+          </div>
+          <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-gray-200 truncate">{{ auth()->user()->name }}</p>
+              <p class="text-[10px] text-emerald-500 font-medium tracking-tight">Enterprise User</p>
+          </div>
+      </div>
+      <a href="{{ route('logout') }}"
+        class="w-full inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 text-red-400 font-bold transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+          <path stroke="currentColor" stroke-width="2"
+            d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6A2.25 2.25 0 0 0 5.25 5.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12" />
+        </svg>
+        Logout Session
+      </a>
+  </div>
+</aside>

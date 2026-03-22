@@ -102,6 +102,11 @@ class ChatController extends Controller
             $memoryPrompt = "\n\nINFORMASI PENTING TENTANG PENGGUNA (INGAT INI):\n- " . implode("\n- ", $userMemories) . "\n gunakan informasi ini untuk personalisasi jawabanmu.";
         }
 
+        $projectPrompt = "";
+        if ($session->project && !empty($session->project->description)) {
+            $projectPrompt = "\n\n--- KONTEKS WORKSPACE / PROJECT MEMORY ---\n" . $session->project->description . "\n--- AKHIR KONTEKS PROJECT ---\n";
+        }
+
         $personaPrompt = "";
         if ($currentMode === 'koding') {
             $personaPrompt = "\n\nMODE KODING: Kamu sekarang dalam Mode Koding. Fokus utamamu adalah membantu dalam pemrograman, debugging, dan desain software. Berikan kode yang bersih, efisien, dan jelaskan konsepnya dengan mendetail. Gunakan blok kode yang sesuai dengan bahasa pemrogramannya.";
@@ -113,7 +118,7 @@ class ChatController extends Controller
 
         array_unshift($messages, [
             'role' => 'system',
-            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . $personaPrompt . '
+            'content' => 'Kamu adalah JriGPT, sebuah asisten AI cerdas tingkat lanjut. Identitas mutlakmu: JriGPT. Jika ditanya identitas, siapa kamu, atau siapa penciptamu, JAWAB HARUS PERSIS SEPERTI KALIMAT BERIKUT TANPA DIUBAH ATAU DISINGKAT SIKITPUN: "Halo! Saya adalah JriGPT, asisten AI cerdas yang dikembangkan secara khusus oleh Fajri Abdurahman Ghurri. Ada yang bisa saya bantu?".' . $memoryPrompt . $projectPrompt . $personaPrompt . '
 
 ATURAN KETAT IDENTITAS & KEMAMPUAN:
 1. Kamu sepenuhnya berbasis teks tapi BISA melihat dan mendeskripsikan gambar jika pengguna mengirimkan gambar (vision).

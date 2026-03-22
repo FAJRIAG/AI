@@ -18,13 +18,16 @@ class ProjectController extends Controller
 
     public function update(Request $r, Project $project){
         abort_unless($project->user_id === $r->user()->id, 403);
-        $project->update($r->validate(['name'=>'required|string|max:100']));
+        $project->update($r->validate([
+            'name' => 'required|string|max:100',
+            'description' => 'nullable|string|max:5000'
+        ]));
         return back();
     }
 
     public function destroy(Request $r, Project $project){
         abort_unless($project->user_id === $r->user()->id, 403);
         $project->delete();
-        return back();
+        return redirect()->route('vip.home');
     }
 }

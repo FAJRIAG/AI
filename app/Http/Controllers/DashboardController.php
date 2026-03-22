@@ -11,46 +11,65 @@ class DashboardController extends Controller
 
     public function index(Request $r)
     {
-        $projects = Project::with(['sessions:id,project_id,title,created_at'])
-            ->where('user_id', $r->user()->id)
-            ->latest()->get();
+        $projects = Project::where('user_id', $r->user()->id)->latest()->get();
 
         $currentSession = null;
         $sid = $r->query('session');
+        $pid = $r->query('project'); // New: targeted project filtering
 
+        // 1. Resolve Session if provided
         if ($sid !== null && $sid !== '') {
             try {
                 $currentSession = ChatSession::with('messages', 'project')->findOrFail($sid);
                 abort_unless($currentSession->project->user_id === $r->user()->id, 403);
+                $pid = $currentSession->project_id; // Sync project filter with session
             } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-                // Return to dashboard without the session ID so it selects/creates a new one
                 return redirect()->route('vip.home');
-            }
-        } else {
-            // Auto-select latest session or create a new one if none exists
-            $latestSession = ChatSession::whereHas('project', function ($query) use ($r) {
-                $query->where('user_id', $r->user()->id);
-            })->latest()->first();
-
-            if ($latestSession) {
-                return redirect()->route('vip.home', ['session' => $latestSession->id]);
-            } else {
-                // Auto create project and session
-                $project = Project::firstOrCreate(
-                    ['user_id' => $r->user()->id],
-                    ['name' => 'My Project']
-                );
-                $session = $project->sessions()->create(['title' => 'New Chat']);
-                return redirect()->route('vip.home', ['session' => $session->id]);
             }
         }
 
+        // 2. Resolve Active Project
+        if (!$pid && $projects->isNotEmpty()) {
+            $pid = $projects->first()->id;
+        }
+
+        $activeProject = $projects->find($pid);
+
+        // 3. Auto-create default if nothing exists
+        if (!$activeProject) {
+            $activeProject = Project::create([
+                'user_id' => $r->user()->id,
+                'name' => 'My Project',
+                'description' => 'Ini adalah workspace default JriGPT kamu.'
+            ]);
+            $projects->prepend($activeProject);
+            $pid = $activeProject->id;
+        }
+
+        // 4. Resolve the Session if not provided
+        if (!$currentSession) {
+            $latestInProject = $activeProject->sessions()->latest()->first();
+            if ($latestInProject) {
+                return redirect()->route('vip.home', ['session' => $latestInProject->id, 'project' => $pid]);
+            } else {
+                $session = $activeProject->sessions()->create(['title' => 'New Chat']);
+                return redirect()->route('vip.home', ['session' => $session->id, 'project' => $pid]);
+            }
+        }
+
+        // 5. Build Sidebar Session List (Filtered by Project)
+        $sessions = $activeProject->sessions()->latest()->get()->map(fn($s) => [
+            'sid' => $s->id,
+            'title' => $s->title ?? 'Untitled',
+        ])->all();
+
         return view('vip.dashboard', [
             'projects' => $projects,
+            'activeProject' => $activeProject,
             'currentSession' => $currentSession,
-            'sessions' => $this->mapSessionsFromProjects($projects), // biar sidebar punya flat list
-            'sid' => $currentSession?->id,
-            'currentMode' => $currentSession?->mode ?? 'default',
+            'sessions' => $sessions,
+            'sid' => $currentSession->id,
+            'currentMode' => $currentSession->mode ?? 'default',
         ]);
     }
 

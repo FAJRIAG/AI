@@ -74,4 +74,5 @@
 @push('modals')
   {{-- Modal rename (dipakai sidebar VIP) --}}
   @include('public.partials.modals.rename')
+  @include('vip.partials.modals.project_settings')
 @endpush
