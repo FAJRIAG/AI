@@ -8,11 +8,12 @@ JriGPT adalah asisten AI cerdas tingkat lanjut yang dikembangkan secara khusus o
 
 ## ✨ Fitur Unggulan
 
-### 🌐 Web-Agent (Browser Control) - **Powered by Jina Reader**
-JriGPT tidak hanya memberikan ringkasan pencarian yang terbatas. Ia bisa bener-bener "mengunjungi" website spesifik (seperti iBox, Shopee, atau portal berita) menggunakan integrasi **Jina Reader**.
+### 🌐 Web-Agent (Browser Control & Autonomous Research)
+JriGPT tidak hanya memberikan ringkasan pencarian biasa. Ia beroperasi sebagai agen otonom yang bisa melakukan riset multi-langkah secara mandiri menggunakan **Jina Reader** dan eksekusi instruksi rekursif.
 - **Deep Extraction**: Membaca isi lengkap halaman dalam format Markdown yang bersih.
 - **Bypass Bot**: Mampu menembus proteksi JavaScript dan bot di situs-situs modern.
-- **Agentic Loops**: Mampu melakukan rantai tindakan secara otomatis.
+- **Agentic Loops & Self-Healing**: Mampu melakukan rantai tindakan secara otomatis (hingga 6 lapis pencarian). Dilengkapi "Self-Healing" yang mencegah AI berhenti di tengah jalan, dan "Hard Break" anti-looping untuk menjamin hasil akhir.
+- **Silent Agent UI**: Semua proses teknis (JSON, pemanggilan tool) disembunyikan secara agresif ("aggressive buffering"). Anda hanya melihat indikator `🔍` yang elegan hingga riset selesai 100%.
 
 ### 🎭 Emotional Tone Sync (Real-time Sentiment)
 JriGPT memahami perasaan Anda. Antarmuka (UI) akan berubah warna secara dinamis berdasarkan cara Anda mengetik:
