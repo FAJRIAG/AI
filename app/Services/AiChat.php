@@ -41,7 +41,9 @@ KEMAMPUAN WEB AGENT:
 3. Gunakan `get_links` untuk melihat daftar halaman lain di sebuah situs. Ini membantu Anda "menjelajahi" menu navigasi atau mencari halaman detail.
 4. Gunakan `deep_research` untuk mencari informasi mendalam dari dokumen-dokumen internal atau kodingan yang ada di Workspace/Project saat ini. Ini adalah "Infinite Memory" Anda untuk project ini.
 5. Anda adalah Web Agent Mandiri: Jika Anda tidak menemukan jawaban di halaman pertama, gunakan `get_links` untuk mencari halaman lain (seperti "Pricing", "About", atau "Details") dan kunjungi halaman tersebut.
-6. PENTING: Jangan menjelaskan apa yang akan Anda lakukan. Langsung panggil tool yang diperlukan. Jangan memberikan kata pengantar seperti "Saya akan mencari..." atau "Mari kita coba...". Jika Anda butuh memanggil tool, panggil saja secara langsung.
+6. PENTING: Jangan menjelaskan apa yang akan Anda lakukan. Langsung panggil tool yang diperlukan. Jangan memberikan kata pengantar seperti "Saya akan mencari..." atau "Mari saya coba...". Jika Anda sedang dalam proses riset (setelah Turn pertama), langsung berikan hasil atau panggil tool berikutnya tanpa basa-basi.
+7. OTONOM: Jangan pernah berhenti di tengah riset dan meminta izin atau menunggu konfirmasi "Lanjutkan". Selesaikan seluruh riset sampai Anda mendapatkan jawaban lengkap barulah Anda memberikan tanggapan final ke user.
+8. LARANGAN KERAS: JANGAN PERNAH memberikan pesan pendek seperti "... (Membaca konten...)" atau semacamnya. Anda HARUS selalu MEMANGGIL TOOL (json) atau MEMBERIKAN JAWABAN AKHIR YANG LENGKAP.
 EOT;
 
         foreach ($messages as &$msg) {
@@ -61,12 +63,12 @@ EOT;
         $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus);
     }
 
-    private function streamOpenAIResponses(array $messages, \Closure $onToken, $project = null, $lastStatus = '', int $depth = 0): void
+    private function streamOpenAIResponses(array $messages, \Closure $onToken, $project = null, $lastStatus = '', int $depth = 0, string $lastFingerprint = ''): void
     {
         // Safety: Limit recursion depth to prevent infinite loops
-        if ($depth > 10) {
-            $onToken("\n\n(⚠️ Masalah: Terlalu banyak langkah pencarian. Coba buat pertanyaan yang lebih spesifik.)");
-            return;
+        if ($depth > 8) {
+            $onToken("\n\n(⚠️ Masalah: Terlalu banyak langkah pencarian. Menampilkan apa yang telah ditemukan...)\n\n");
+            // Force answer instead of returning
         }
 
         @set_time_limit(0);
@@ -168,6 +170,12 @@ EOT;
                 ]
             ]
         ];
+
+        // Force Answer Logic: Remove tools to prevent AI from looping if depth is high or self-healing
+        $forceAnswer = $depth > 6;
+        if ($forceAnswer) {
+            unset($payload['tools']);
+        }
 
         $keyManager = new AiKeyManager();
         $maxRetries = 3;
@@ -281,13 +289,17 @@ EOT;
                         $contentPiece = $delta['content'];
                         $fullContent .= $contentPiece;
                         
-                        // Start buffering if we see even a PART of a tool name or an opening brace
+                        // Start buffering at the beginning of the response and if we see any tool triggers
                         if (!$isBuffering) {
                             $checkText = strtolower($contentPiece);
-                            if (strpos($checkText, 'search') !== false || 
+                            // If we have very little content so far, keep buffering to be safe
+                            if (strlen($fullContent) < 100 || 
+                                strpos($checkText, 'search') !== false || 
                                 strpos($checkText, 'browse') !== false || 
                                 strpos($checkText, 'deep') !== false || 
                                 strpos($checkText, 'get_') !== false || 
+                                strpos($checkText, 'tool_call') !== false || 
+                                strpos($checkText, 'arguments') !== false || 
                                 strpos($checkText, '{') !== false) {
                                 $isBuffering = true;
                             }
@@ -295,8 +307,8 @@ EOT;
 
                         if ($isBuffering) {
                             $potentialToolBuffer .= $contentPiece;
-                            // If it looks like JSON starts, definitely buffer until end or failure
-                            if (strlen($potentialToolBuffer) > 3000) {
+                            // If buffer gets too large without finding a tool, release it
+                            if (strlen($potentialToolBuffer) > 4000) {
                                 $onToken($potentialToolBuffer);
                                 $potentialToolBuffer = '';
                                 $isBuffering = false;
@@ -305,7 +317,6 @@ EOT;
                             $onToken($contentPiece);
                         }
                     }
-
 
                     if (isset($delta['tool_calls'])) {
                         $isBuffering = true; 
@@ -316,93 +327,158 @@ EOT;
                                     'id' => $tc['id'] ?? '',
                                     'type' => 'function',
                                     'function' => [
-                                        'name' => $tc['function']['name'] ?? '',
+                                        'name' => '',
                                         'arguments' => ''
                                     ]
                                 ];
                             }
-                            if (isset($tc['function']['arguments'])) {
-                                $toolCallsBuffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
-                            }
-                        }
-                    }
-                }
-            } 
-
-            // FALLBACK FOR TEXT-BASED TOOL CALLS (Multiple support)
-            if (empty($toolCallsBuffer)) {
-                if (preg_match_all('/(search_web|browse_url|deep_research|get_links).*?(\{.*?\})/is', $fullContent, $allMatches, PREG_SET_ORDER)) {
-                    foreach ($allMatches as $matches) {
-                        $toolName = trim($matches[1]);
-                        $toolJson = trim($matches[2]);
-                        if (json_decode($toolJson, true)) {
-                            $toolCallsBuffer[] = [
-                                'id' => 'call_' . substr(md5(uniqid()), 0, 8),
-                                'type' => 'function',
-                                'function' => [
-                                    'name' => $toolName,
-                                    'arguments' => $toolJson
-                                ]
-                            ];
+                            if (isset($tc['id'])) $toolCallsBuffer[$idx]['id'] = $tc['id'];
+                            if (isset($tc['function']['name'])) $toolCallsBuffer[$idx]['function']['name'] .= $tc['function']['name'];
+                            if (isset($tc['function']['arguments'])) $toolCallsBuffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
                         }
                     }
                 }
             }
 
-            if (!empty($toolCallsBuffer)) {
-                $messages[] = [
-                    'role' => 'assistant',
-                    'content' => $fullContent ?: '🔍 *(Menjalankan pencarian...)*', 
-                    'tool_calls' => array_values($toolCallsBuffer)
-                ];
-
-                foreach ($toolCallsBuffer as $tc) {
-                    if ($tc['function']['name'] === 'search_web') {
-                        $args = json_decode($tc['function']['arguments'], true);
-                        $query = $args['query'] ?? '';
-                        $result = \App\Services\WebSearchEngine::search($query);
-                        $messages[] = [
-                            'role' => 'tool',
-                            'tool_call_id' => $tc['id'],
-                            'content' => $result
-                        ];
-                    } elseif ($tc['function']['name'] === 'browse_url') {
-                        $args = json_decode($tc['function']['arguments'], true);
-                        $url = $args['url'] ?? '';
-                        $result = \App\Services\BrowserService::browse($url);
-                        $messages[] = [
-                            'role' => 'tool',
-                            'tool_call_id' => $tc['id'],
-                            'content' => $result
-                        ];
-                    } elseif ($tc['function']['name'] === 'deep_research' && $project) {
-                        $args = json_decode($tc['function']['arguments'], true);
-                        $query = $args['query'] ?? '';
-                        $knowService = resolve(\App\Services\ProjectKnowledgeService::class);
-                        $result = $knowService->search($project, $query);
-                        $messages[] = [
-                            'role' => 'tool',
-                            'tool_call_id' => $tc['id'],
-                            'content' => $result
-                        ];
-                    } elseif ($tc['function']['name'] === 'get_links') {
-                        $args = json_decode($tc['function']['arguments'], true);
-                        $url = $args['url'] ?? '';
-                        $result = \App\Services\BrowserService::getLinks($url);
-                        $messages[] = [
-                            'role' => 'tool',
-                            'tool_call_id' => $tc['id'],
-                            'content' => $result
+            // FALLBACK: If no structural tool calls, try Regex on the buffer or full content
+            if (empty($toolCallsBuffer)) {
+                $searchContent = $isBuffering ? $potentialToolBuffer : $fullContent;
+                $cleanBuffer = preg_replace('/```[a-z]*\n?(.*?)\n?```/s', '$1', $searchContent);
+                $cleanBuffer = trim($cleanBuffer);
+                
+                // Detection for "name": "search_web" OR "tool_call_name": "search_web" OR just "search_web"
+                if (preg_match('/(name|tool_call_name)?("\s*:\s*"|\s+)?(search_web|browse_url|deep_research|get_links)/i', $cleanBuffer, $match)) {
+                    $toolName = strtolower($match[3]);
+                    $toolJson = '';
+                    // Find arguments either as "arguments": {...} or tool_call_arguments {...} or just {...}
+                    if (preg_match('/(arguments|tool_call_arguments)?("\s*:\s*"|\s+)?(\{.*?\})/s', $cleanBuffer, $argMatch)) {
+                        $toolJson = $argMatch[3];
+                    }
+                    
+                    if ($toolName && $toolJson) {
+                        $toolCallsBuffer[] = [
+                            'id' => 'call_' . substr(md5(uniqid()), 0, 8),
+                            'type' => 'function',
+                            'function' => [
+                                'name' => $toolName,
+                                'arguments' => $toolJson
+                            ]
                         ];
                     }
                 }
+            }
+
+            if (!empty($toolCallsBuffer)) {
+                // ALWAYS notify the user that research is continuing
+                $onToken(' 🔍 ');
+
+                $messages[] = [
+                    'role' => 'assistant',
+                    'content' => $fullContent ?: '...', 
+                    'tool_calls' => array_values($toolCallsBuffer)
+                ];
+
+                $hasQuotaError = false;
+                $hasKeyError = false;
+
+                foreach ($toolCallsBuffer as $tc) {
+                    $tName = $tc['function']['name'];
+                    $tArgs = $tc['function']['arguments'];
+                    $result = '';
+
+                    try {
+                        if ($tName === 'search_web') {
+                            $args = json_decode($tArgs, true);
+                            $result = \App\Services\WebSearchEngine::search($args['query'] ?? '');
+                        } elseif ($tName === 'browse_url') {
+                            $args = json_decode($tArgs, true);
+                            $result = \App\Services\BrowserService::browse($args['url'] ?? '');
+                        } elseif ($tName === 'deep_research' && $project) {
+                            $args = json_decode($tArgs, true);
+                            $knowService = resolve(\App\Services\ProjectKnowledgeService::class);
+                            $result = $knowService->search($project, $args['query'] ?? '');
+                        } elseif ($tName === 'get_links') {
+                            $args = json_decode($tArgs, true);
+                            $result = \App\Services\BrowserService::getLinks($args['url'] ?? '');
+                        }
+                    } catch (\Exception $e) {
+                        $result = "Tool Execution Error: " . $e->getMessage();
+                    }
+
+                    Log::info("Tool executed: $tName. Result length: " . strlen((string)$result));
+                    if (is_string($result) && (strpos($result, 'ERROR') !== false || strpos($result, 'Quota') !== false)) {
+                        Log::warning("Tool Error Detected: $result");
+                        if (strpos($result, 'Quota Exceeded') !== false) $hasQuotaError = true;
+                        if (strpos($result, 'Key Tidak Valid') !== false) $hasKeyError = true;
+                    }
+
+                    $messages[] = [
+                        'role' => 'tool',
+                        'tool_call_id' => $tc['id'],
+                        'content' => (string)$result
+                    ];
+                }
 
                 Log::info("Recursive stream starting. Depth: $depth. Messages count: " . count($messages));
-                $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus, $depth + 1);
+                
+                $currentFingerprint = json_encode(array_map(fn($tc) => [$tc['function']['name'], $tc['function']['arguments']], $toolCallsBuffer));
+                if ($currentFingerprint === $lastFingerprint) {
+                    Log::warning("AI is looping with identical tool calls. Forcing answer.");
+                    $messages[] = [
+                        'role' => 'user',
+                        'content' => 'SYSTEM WARNING: Anda memanggil tool yang persis sama dengan sebelumnya. Riset dibatalkan. BACA hasil yang ada dan berikan JAWABAN AKHIR sekarang.'
+                    ];
+                    // Unset tools in next call by tricking depth or just passing it
+                    $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus, 10, $currentFingerprint);
+                    return;
+                }
+                
+                // LOOP PROTECTION: Handle current turn errors
+                if ($hasQuotaError) {
+                    $onToken("\n\n(⚠️ **PENTING**: Sepertinya kuota OpenAI API kamu habis. Riset mendalam (Deep Research) tidak bisa dilanjutkan. Silakan isi saldo OpenAI atau gunakan pencarian web biasa.)");
+                    return;
+                }
+
+                if ($hasKeyError) {
+                    $onToken("\n\n(⚠️ **PENTING**: Proxy JriGPT kamu sepertinya tidak mendukung Fitur Baca Kodingan (Embeddings). Tapi jangan khawatir, JriGPT tetap lanjut riset pakai Pencarian Web! 🌐)\n\n");
+                    
+                    // Force the AI to understand it must fallback
+                    $messages[] = [
+                        'role' => 'user', // MUST BE USER, NOT SYSTEM to prevent hallucination in open source models
+                        'content' => 'SYSTEM WARNING: Fitur deep_research GAGAL. Jangan gunakan deep_research lagi di sesi ini. Gunakan search_web atau browse_url sebagai gantinya, atau berikan jawaban akhir jika informasi sudah cukup.'
+                    ];
+                }
+
+                $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus, $depth + 1, $currentFingerprint);
             } else {
+                // No tools found, we reached the end of the AI's generation for this turn
+                $finalText = $isBuffering ? $potentialToolBuffer : $fullContent;
+                
+                // Self-Healing for "Lazy AI" that stops with a short thought or empty response after researching
+                if ($depth > 0 && strlen(trim(strip_tags($finalText))) < 150) {
+                    Log::warning("Self-Healing Triggered! AI outputted a short/empty non-tool answer at depth $depth. Content: " . $finalText);
+                    
+                    $onToken(' 🧠 '); // Indicate we are synthesizing
+
+                    if ($finalText !== '') {
+                        $messages[] = [
+                            'role' => 'assistant',
+                            'content' => $finalText
+                        ];
+                    }
+                    
+                    $messages[] = [
+                        'role' => 'user',
+                        'content' => 'SYSTEM WARNING: Anda baru saja melakukan riset ekstensif menggunakan tools, TETAPI Anda berhenti tanpa memberikan PENJELASAN AKHIR yang diminta User. BACA semua hasil riset Anda di context sejarah chat, rangkum informasinya, dan BERIKAN JAWABAN AKHIR YANG LENGKAP sekarang juga. Ingat: Anda harus menyusun penjelasannya dalam format yang rapi sesuai permintaan awal user. JANGAN berhenti dan JANGAN gunakan tool lagi!'
+                    ];
+                    
+                    // Force answer by tricking depth to > 6
+                    $this->streamOpenAIResponses($messages, $onToken, $project, $lastStatus, 10, '');
+                    return;
+                }
+
                 if ($potentialToolBuffer !== '') {
                     $onToken($potentialToolBuffer);
-                    $potentialToolBuffer = '';
                 }
             }
         } catch (\Exception $e) {

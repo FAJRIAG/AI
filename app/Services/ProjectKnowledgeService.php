@@ -75,7 +75,7 @@ class ProjectKnowledgeService
         $chunks = DocumentChunker::chunk($extractedText, 1000, 200);
         foreach ($chunks as $i => $chunk) {
             $embedding = $this->vectorSearch->getEmbedding($chunk);
-            if ($embedding) {
+            if ($embedding && is_array($embedding)) {
                 $vectorId = "p{$project->id}_" . md5($attachmentUrl) . "_$i";
                 $this->vectorSearch->upsert($vectorId, $embedding, [
                     'project_id' => $project->id,
@@ -93,6 +93,11 @@ class ProjectKnowledgeService
     {
         $embedding = $this->vectorSearch->getEmbedding($query);
         if (!$embedding) return "Gagal melakukan pencarian (Embedding error).";
+        
+        // If it's a string error from VectorSearchService, return it
+        if (is_string($embedding)) {
+            return $embedding;
+        }
 
         $matches = $this->vectorSearch->query($embedding, $topK, [
             'project_id' => ['$eq' => $project->id]

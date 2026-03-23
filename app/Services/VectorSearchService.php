@@ -7,37 +7,71 @@ use Illuminate\Support\Facades\Log;
 
 class VectorSearchService
 {
-    private string $pineconeKey;
-    private string $pineconeUrl;
-    private string $openAiKey;
+    private ?string $pineconeKey;
+    private ?string $pineconeUrl;
+    private ?string $apiKey;
+    private ?string $apiUrl;
+    private ?string $model;
 
     public function __construct()
     {
         $this->pineconeKey = env('PINECONE_API_KEY');
-        $this->pineconeUrl = rtrim(env('PINECONE_INDEX_URL'), '/');
-        $this->openAiKey = env('OPENAI_API_KEY');
+        $this->pineconeUrl = env('PINECONE_INDEX_URL') ? rtrim(env('PINECONE_INDEX_URL'), '/') : null;
+        
+        $provider = env('AI_PROVIDER', 'openai');
+        
+        if ($provider === 'jrigpt') {
+            $this->apiKey = env('AI_API_KEY_1');
+            $rawUrl = env('AI_URL_1', 'https://api.openai.com/v1/chat/completions');
+            // Extract base URL from JriGPT endpoint (e.g., https://jrigpt.proxyman.com?model=...)
+            $parsedUrl = parse_url($rawUrl);
+            $baseUrl = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? 'api.openai.com');
+            // Proxies usually have a /v1/embeddings endpoint
+            $this->apiUrl = $baseUrl . '/v1/embeddings';
+            $this->model = 'text-embedding-3-small'; // Standard for many proxies
+        } else {
+            $this->apiKey = env('OPENAI_API_KEY');
+            $this->apiUrl = 'https://api.openai.com/v1/embeddings';
+            $this->model = 'text-embedding-3-small';
+        }
     }
 
     /**
-     * Generate embedding for a given text using OpenAI.
+     * Generate embedding for a given text.
      */
-    public function getEmbedding(string $text): ?array
+    public function getEmbedding(string $text)
     {
+        if (!$this->apiKey) {
+            Log::warning("VectorSearchService: API KEY is missing in .env. Skipping embedding generation.");
+            return null;
+        }
+
         try {
-            $response = Http::withToken($this->openAiKey)
-                ->post('https://api.openai.com/v1/embeddings', [
-                    'model' => 'text-embedding-3-small',
+            $response = Http::withToken($this->apiKey)
+                ->post($this->apiUrl, [
+                    'model' => $this->model,
                     'input' => $text,
                 ]);
 
             if (!$response->successful()) {
-                Log::error("OpenAI Embedding Error: " . $response->body());
+                $error = $response->json('error.message') ?? $response->body();
+                if (strpos($error, 'insufficient_quota') !== false) {
+                    Log::warning("Embedding Quota Exceeded: " . $error);
+                    return "ERROR: API Quota Exceeded. Mohon cek billing Anda.";
+                }
+
+                if (strpos($error, 'Incorrect API key') !== false || strpos($error, 'invalid_api_key') !== false) {
+                    Log::warning("Embedding Key Error: " . $error);
+                    return "ERROR: API Key Tidak Valid untuk Embeddings. Pastikan provider Anda mendukung endpoint /v1/embeddings.";
+                }
+
+                Log::error("Embedding Error: " . $response->body());
                 return null;
             }
 
             return $response->json('data.0.embedding');
         } catch (\Exception $e) {
-            Log::error("OpenAI Embedding Exception: " . $e->getMessage());
+            Log::error("Embedding Exception: " . $e->getMessage());
             return null;
         }
     }
