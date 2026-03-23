@@ -304,7 +304,7 @@ EOT;
                             // Jika kita baru saja keluar dari thought, bersihkan buffer dan flush
                             if ($potentialToolBuffer !== '') {
                                 $potentialToolBuffer .= $contentPiece;
-                                $cleanBuffer = preg_replace('/<thought>.*?<\/thought>\n*/is', '', $potentialToolBuffer);
+                                $cleanBuffer = preg_replace('/<thought>.*?(<\/thought>|$)\n*/is', '', $potentialToolBuffer);
                                 if (trim($cleanBuffer) !== '') {
                                     $onToken($cleanBuffer);
                                 }
@@ -453,7 +453,7 @@ EOT;
             } else {
                 // No tools found, we reached the end of the AI's generation for this turn
                 $finalText = $isBuffering ? $potentialToolBuffer : $fullContent;
-                $cleanFinalText = preg_replace('/<thought>.*?<\/thought>\n*/is', '', $finalText);
+                $cleanFinalText = preg_replace('/<thought>.*?(<\/thought>|$)\n*/is', '', $finalText);
                 
                 // Self-Healing for "Lazy AI" that stops with a short thought or empty response after researching
                 if ($depth > 0 && strlen(trim(strip_tags($cleanFinalText))) < 150) {
@@ -479,7 +479,7 @@ EOT;
                 }
 
                 if ($potentialToolBuffer !== '') {
-                    $cleanBuffer = preg_replace('/<thought>.*?<\/thought>\n*/is', '', $potentialToolBuffer);
+                    $cleanBuffer = preg_replace('/<thought>.*?(<\/thought>|$)\n*/is', '', $potentialToolBuffer);
                     if (trim($cleanBuffer) !== '') {
                         $onToken($cleanBuffer);
                     }
