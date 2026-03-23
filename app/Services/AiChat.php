@@ -32,18 +32,21 @@ class AiChat
             }
         }
 
-        // TAMBAHKAN INSTRUKSI WEB AGENT KE SYSTEM PROMPT
+        // TAMBAHKAN INSTRUKSI WEB AGENT & REACT KE SYSTEM PROMPT
         $agenticPrompt = <<<EOT
 
 
-KEMAMPUAN WEB AGENT:
-1. Gunakan `search_web` untuk mencari informasi umum atau menemukan URL yang relevan.
-3. Gunakan `get_links` untuk melihat daftar halaman lain di sebuah situs. Ini membantu Anda "menjelajahi" menu navigasi atau mencari halaman detail.
-4. Gunakan `deep_research` untuk mencari informasi mendalam dari dokumen-dokumen internal atau kodingan yang ada di Workspace/Project saat ini. Ini adalah "Infinite Memory" Anda untuk project ini.
-5. Anda adalah Web Agent Mandiri: Jika Anda tidak menemukan jawaban di halaman pertama, gunakan `get_links` untuk mencari halaman lain (seperti "Pricing", "About", atau "Details") dan kunjungi halaman tersebut.
-6. PENTING: Jangan menjelaskan apa yang akan Anda lakukan. Langsung panggil tool yang diperlukan. Jangan memberikan kata pengantar seperti "Saya akan mencari..." atau "Mari saya coba...". Jika Anda sedang dalam proses riset (setelah Turn pertama), langsung berikan hasil atau panggil tool berikutnya tanpa basa-basi.
-7. OTONOM: Jangan pernah berhenti di tengah riset dan meminta izin atau menunggu konfirmasi "Lanjutkan". Selesaikan seluruh riset sampai Anda mendapatkan jawaban lengkap barulah Anda memberikan tanggapan final ke user.
-8. LARANGAN KERAS: JANGAN PERNAH memberikan pesan pendek seperti "... (Membaca konten...)" atau semacamnya. Anda HARUS selalu MEMANGGIL TOOL (json) atau MEMBERIKAN JAWABAN AKHIR YANG LENGKAP.
+KEMAMPUAN WEB AGENT & ARSITEKTUR KERJA (ReAct & Reflection):
+Anda adalah Web Agent Otonom yang dilengkapi dengan kemampuan berpikir mendalam.
+1. REASONING (Berpikir): Sebelum memanggil tool apa pun atau sebelum memberikan jawaban akhir, Anda WAJIB merencanakan tindakan Anda atau menevaluasi hasil sebelumnya menggunakan blok `<thought>...</thought>`.
+   Contoh:
+   <thought>
+   User menanyakan tren saham X. Saya belum mengetahuinya.
+   1. Saya perlu mencari "Tren saham X 2026" di web.
+   </thought>
+2. ACTION (Bertindak): Setelah berpikir di dalam `<thought>`, segera panggil fungsi/tool yang relevan (seperti `search_web`, `get_links`, `deep_research`). Fokus panggil toolnya, jangan bertele-tele.
+3. REFLECTION (Evaluasi): Ketika tool mengembalikan hasil, buat blok `<thought>` baru. Evaluasi apakah hasilnya memadai untuk menjawab user. Jika masih kurang relevan atau error, buat rencana baru dan panggil tool lagi.
+4. FINAL ANSWER: Jika hasil riset dirasa sudah sempurna, berikan penjelasan komprehensif ke user TANPA MENGGUNAKAN TOOL dan tutup tugas ini.
 EOT;
 
         foreach ($messages as &$msg) {
@@ -288,33 +291,30 @@ EOT;
                     if (isset($delta['content']) && $delta['content'] !== '') {
                         $contentPiece = $delta['content'];
                         $fullContent .= $contentPiece;
-                        
-                        // Start buffering at the beginning of the response and if we see any tool triggers
-                        if (!$isBuffering) {
-                            $checkText = strtolower($contentPiece);
-                            // If we have very little content so far, keep buffering to be safe
-                            if (strlen($fullContent) < 100 || 
-                                strpos($checkText, 'search') !== false || 
-                                strpos($checkText, 'browse') !== false || 
-                                strpos($checkText, 'deep') !== false || 
-                                strpos($checkText, 'get_') !== false || 
-                                strpos($checkText, 'tool_call') !== false || 
-                                strpos($checkText, 'arguments') !== false || 
-                                strpos($checkText, '{') !== false) {
-                                $isBuffering = true;
-                            }
-                        }
 
-                        if ($isBuffering) {
+                        // Gunakan substr_count untuk melacak kedalaman tag secara akurat, mendukung multiple thought blocks
+                        $thoughtsOpen = substr_count($fullContent, '<thought>');
+                        $thoughtsClosed = substr_count($fullContent, '</thought>');
+                        $inThought = $thoughtsOpen > $thoughtsClosed;
+
+                        if ($inThought) {
+                            $isBuffering = true;
                             $potentialToolBuffer .= $contentPiece;
-                            // If buffer gets too large without finding a tool, release it
-                            if (strlen($potentialToolBuffer) > 4000) {
-                                $onToken($potentialToolBuffer);
+                        } else {
+                            // Jika kita baru saja keluar dari thought, bersihkan buffer dan flush
+                            if ($potentialToolBuffer !== '') {
+                                $potentialToolBuffer .= $contentPiece;
+                                $cleanBuffer = preg_replace('/<thought>.*?<\/thought>\n*/is', '', $potentialToolBuffer);
+                                if (trim($cleanBuffer) !== '') {
+                                    $onToken($cleanBuffer);
+                                }
                                 $potentialToolBuffer = '';
                                 $isBuffering = false;
+                            } else {
+                                // Streaming normal untuk teks biasa
+                                $safePiece = str_replace(['</thought>', '<thought>'], '', $contentPiece);
+                                $onToken($safePiece);
                             }
-                        } else {
-                            $onToken($contentPiece);
                         }
                     }
 
@@ -453,17 +453,18 @@ EOT;
             } else {
                 // No tools found, we reached the end of the AI's generation for this turn
                 $finalText = $isBuffering ? $potentialToolBuffer : $fullContent;
+                $cleanFinalText = preg_replace('/<thought>.*?<\/thought>\n*/is', '', $finalText);
                 
                 // Self-Healing for "Lazy AI" that stops with a short thought or empty response after researching
-                if ($depth > 0 && strlen(trim(strip_tags($finalText))) < 150) {
-                    Log::warning("Self-Healing Triggered! AI outputted a short/empty non-tool answer at depth $depth. Content: " . $finalText);
+                if ($depth > 0 && strlen(trim(strip_tags($cleanFinalText))) < 150) {
+                    Log::warning("Self-Healing Triggered! AI outputted a short/empty non-tool answer at depth $depth. Content: " . $cleanFinalText);
                     
                     $onToken(' 🧠 '); // Indicate we are synthesizing
 
-                    if ($finalText !== '') {
+                    if ($cleanFinalText !== '') {
                         $messages[] = [
                             'role' => 'assistant',
-                            'content' => $finalText
+                            'content' => $finalText // Send full text including thoughts to AI for state awareness
                         ];
                     }
                     
@@ -478,7 +479,10 @@ EOT;
                 }
 
                 if ($potentialToolBuffer !== '') {
-                    $onToken($potentialToolBuffer);
+                    $cleanBuffer = preg_replace('/<thought>.*?<\/thought>\n*/is', '', $potentialToolBuffer);
+                    if (trim($cleanBuffer) !== '') {
+                        $onToken($cleanBuffer);
+                    }
                 }
             }
         } catch (\Exception $e) {
