@@ -46,14 +46,14 @@
         </div>
     </div>
 
-    <form method="GET" action="{{ route('vip.home') }}" class="w-full">
-        <input type="hidden" name="project" value="{{ $activeProject->id }}">
+    <form method="POST" action="{{ route('sessions.store', $activeProject->id) }}" class="w-full">
+        @csrf
         <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition
                  bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700 shadow-[0_4px_15px_rgba(5,150,105,0.2)]" type="submit">
           <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor">
             <path stroke-width="3" d="M12 4v16m8-8H4" />
           </svg>
-          New Chat in Workspace
+          New Chat
         </button>
       </form>
   </div>
